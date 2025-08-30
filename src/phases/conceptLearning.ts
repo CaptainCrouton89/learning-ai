@@ -57,15 +57,15 @@ export class ConceptLearningPhase {
     await this.courseManager.updateSessionPhase(session, 'concept-learning', concept.name);
     this.questionCount = 0;
 
+    // Generate the first question to start the conversation
+    const firstQuestion = await this.ai.generateConceptQuestion(
+      concept,
+      session.conversationHistory.slice(-10)
+    );
+    console.log(chalk.cyan(`\n${firstQuestion}\n`));
+    await this.courseManager.addConversationEntry(session, 'assistant', firstQuestion);
+
     while (this.questionCount < this.maxQuestionsPerConcept) {
-      const question = await this.ai.generateConceptQuestion(
-        concept,
-        session.conversationHistory.slice(-10)
-      );
-
-      console.log(chalk.cyan(`\n${question}\n`));
-      await this.courseManager.addConversationEntry(session, 'assistant', question);
-
       const { answer } = await inquirer.prompt([{
         type: 'input',
         name: 'answer',
@@ -75,14 +75,17 @@ export class ConceptLearningPhase {
 
       await this.courseManager.addConversationEntry(session, 'user', answer);
 
-      const feedback = await this.ai.evaluateHighLevelAnswer(
+      // Get feedback and next question in one AI call (except for last iteration)
+      const isLastQuestion = this.questionCount === this.maxQuestionsPerConcept - 1;
+      const feedbackWithFollowUp = await this.ai.evaluateConceptAnswer(
         answer,
-        course,
-        session.conversationHistory.slice(-10)
+        concept,
+        session.conversationHistory.slice(-10),
+        !isLastQuestion // Include follow-up question unless it's the last one
       );
 
-      console.log(chalk.green(`\n${feedback}\n`));
-      await this.courseManager.addConversationEntry(session, 'assistant', feedback);
+      console.log(chalk.green(`\n${feedbackWithFollowUp}\n`));
+      await this.courseManager.addConversationEntry(session, 'assistant', feedbackWithFollowUp);
 
       this.questionCount++;
 

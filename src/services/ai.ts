@@ -84,13 +84,22 @@ export class AIService {
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `You are teaching the high-level concepts of ${course.name}.
-      Ask probing questions to build foundational understanding.
-      Keep questions focused on understanding rather than memorization.`,
-      prompt: `Based on the conversation so far, ask the next question to probe understanding of ${
-        course.name
-      }.
-      Conversation history: ${JSON.stringify(conversationHistory)}`,
+      system: `<role>
+You are facilitating foundational understanding of "${course.name}".
+</role>
+
+<approach>
+- Ask questions that reveal conceptual understanding
+- Focus on "why" and "how" rather than "what"
+- Build from fundamental principles
+- Connect to real-world relevance
+- One clear question at a time
+</approach>`,
+      prompt: `<context>
+${conversationHistory.length > 0 ? `Previous discussion:\n${conversationHistory.slice(-4).map(entry => `${entry.role}: ${entry.content}`).join("\n\n")}` : 'Starting the conversation.'}
+</context>
+
+Ask a probing question about ${course.name} that explores foundational understanding.`,
     });
 
     return text;
@@ -99,16 +108,45 @@ export class AIService {
   async evaluateHighLevelAnswer(
     userAnswer: string,
     course: Course,
-    conversationHistory: Array<{ role: string; content: string }>
+    conversationHistory: Array<{ role: string; content: string }>,
+    includeFollowUp: boolean = false
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `You are teaching ${course.name}. 
-      Provide feedback on the user's answer, correct if necessary.
-      Be encouraging but accurate.`,
-      prompt: `User answered: ${userAnswer}
-      Conversation history: ${JSON.stringify(conversationHistory)}
-      Provide feedback on this answer.`,
+      system: `<role>
+You are guiding foundational understanding of "${course.name}".
+</role>
+
+<objectives>
+- Address misconceptions with clear explanations
+- Build on correct understanding with additional context
+- Focus on substantive content over evaluative comments
+- Connect to broader principles
+</objectives>
+
+<guidelines>
+1. Skip phrases like "good point", "exactly right", or "you're getting it"
+2. Directly address any factual errors
+3. Add specific details or examples that deepen understanding
+4. Make connections explicit rather than implied
+</guidelines>
+
+${includeFollowUp ? `<follow-up>
+After addressing their response, ask a question that:
+- Builds directly on what they've said
+- Explores implications or applications
+- Challenges them to think deeper
+</follow-up>` : ''}`,
+      prompt: `<user-response>
+${userAnswer}
+</user-response>
+
+<context>
+Recent conversation:
+${conversationHistory.slice(-4).map(entry => `${entry.role}: ${entry.content}`).join("\n\n")}
+</context>
+
+${includeFollowUp ? 'Provide substantive feedback, then ask a follow-up question that builds on their understanding.' : 'Provide substantive feedback on their response.'}`,
     });
 
     return text;
@@ -120,11 +158,79 @@ export class AIService {
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `You are teaching the concept "${concept.name}".
-      Focus on: ${concept["high-level"].join(", ")}
-      Use analogies and break things down. Ask questions to check understanding.`,
-      prompt: `Generate the next teaching point or question for ${concept.name}.
-      Conversation history: ${JSON.stringify(conversationHistory)}`,
+      system: `<role>
+You are an expert educator facilitating deep learning of "${concept.name}".
+</role>
+
+<key-topics>
+${concept["high-level"].map(topic => `• ${topic}`).join("\n")}
+</key-topics>
+
+<approach>
+- Ask specific, thought-provoking questions
+- Focus on one clear concept at a time
+- Use concrete scenarios when applicable
+- Build complexity gradually
+- Encourage critical thinking over recall
+</approach>`,
+      prompt: `<context>
+${conversationHistory.length > 0 ? `Recent discussion:\n${conversationHistory.slice(-3).map(entry => `${entry.role}: ${entry.content}`).join("\n\n")}` : 'This is the beginning of our discussion.'}
+</context>
+
+Generate a focused question or teaching point that explores a specific aspect of ${concept.name}.`,
+    });
+
+    return text;
+  }
+
+  async evaluateConceptAnswer(
+    userAnswer: string,
+    concept: Concept,
+    conversationHistory: Array<{ role: string; content: string }>,
+    includeFollowUp: boolean = false
+  ): Promise<string> {
+    const { text } = await generateText({
+      model: this.model,
+      system: `<role>
+You are an expert educator teaching "${concept.name}" through substantive dialogue.
+</role>
+
+<objectives>
+- Provide specific, actionable insights that advance understanding
+- Focus on content rather than evaluation
+- Use concrete examples and analogies when helpful
+- Build on what the learner knows to introduce new connections
+</objectives>
+
+<key-topics>
+${concept["high-level"].map(topic => `• ${topic}`).join("\n")}
+</key-topics>
+
+<guidelines>
+1. Address factual accuracy directly if needed
+2. Expand on partial understanding with specific details
+3. Connect ideas to practical applications or real examples
+4. Introduce one new insight or perspective
+5. Avoid phrases like "great job", "you're on the right track", or "that's correct"
+6. Skip meta-commentary about the learner's progress or understanding level
+</guidelines>
+
+${includeFollowUp ? `<follow-up>
+After addressing their response, pose a question that:
+- Explores a specific aspect they haven't mentioned
+- Challenges them to apply the concept differently
+- Connects to a related idea naturally
+</follow-up>` : ''}`,
+      prompt: `<user-response>
+${userAnswer}
+</user-response>
+
+<context>
+Recent conversation:
+${conversationHistory.slice(-4).map(entry => `${entry.role}: ${entry.content}`).join("\n\n")}
+</context>
+
+${includeFollowUp ? 'Provide substantive feedback that advances their understanding, then ask a specific follow-up question.' : 'Provide substantive feedback that advances their understanding.'}`,
     });
 
     return text;
