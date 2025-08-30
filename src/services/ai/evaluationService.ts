@@ -64,10 +64,11 @@ export class EvaluationService {
       )}
 
 You must follow these steps:
-1. Call update_comprehension for topics the user addressed. Score accurately:
+1. Call update_comprehension ONLY for topics the user ACTUALLY addressed. Score accurately:
    - 0-2: Needs comprehensive teaching
    - 3-4: Partial understanding - needs more depth
    - 5: Full mastery demonstrated
+   DO NOT score topics that weren't mentioned in their response.
 2. Provide SUBSTANTIVE, DETAILED teaching feedback (minimum 2-3 paragraphs)
    - Include mechanisms, examples, and connections
    - Expand on what they said with additional context
@@ -156,12 +157,16 @@ Evaluate comprehension, provide feedback, then ask a NEW question that:
         existingUnderstanding
       )}
 
-IMPORTANT: Before providing your response, you MUST first call the update_comprehension tool for EACH topic that the user addressed in their response. Score their understanding of each topic from 0-5:
-- 0-1: No understanding or incorrect
-- 2-3: Partial understanding  
-- 4-5: Good to excellent understanding
+CRITICAL SCORING RULES:
+1. ONLY call update_comprehension for topics the user ACTUALLY addressed in their response
+2. Do NOT score topics that weren't mentioned or addressed
+3. Focus evaluation on what the user discussed, not what they didn't
+4. Score understanding from 0-5:
+   - 0-1: No understanding or incorrect
+   - 2-3: Partial understanding  
+   - 4-5: Good to excellent understanding
 
-After updating comprehension scores, provide your feedback response.`,
+After updating comprehension scores for addressed topics only, provide your feedback response.`,
       prompt: `<user-response>
 ${userAnswer}
 </user-response>
@@ -253,10 +258,10 @@ Provide substantive feedback that advances their understanding, then ask a speci
     const { object } = await generateObject({
       model: this.model,
       schema: FlashcardResponseSchema,
-      system: `You are evaluating flashcard answers for the concept "${
+      system: `You are a patient educator helping learners master "${
         concept.name
-      }".
-      The user needs to demonstrate knowledge of ALL fields: ${fields.join(
+      }" through flashcard practice.
+      The user needs to understand ALL fields: ${fields.join(
         ", "
       )}.
       
@@ -264,41 +269,80 @@ Provide substantive feedback that advances their understanding, then ask a speci
       
       Score comprehension 0-5 (4+ counts as success, adjusted for their level).
       
-      CRITICAL FORMATTING REQUIREMENTS:
-      YOU MUST use this exact structure with proper spacing between sections:
+      EDUCATIONAL RESPONSE FORMATS:
       
-      For CORRECT answers (score 4+):
-      ✓ Correct.
+      For EXCELLENT answers (score 5):
+      ✓ Perfect understanding!
       
-      **Additional insight:** {One specific fact or connection they didn't mention}
+      **Advanced insight:** {Share something deeper they might not know}
       
-      For INCORRECT/PARTIAL answers (score 0-3):
-      ❌ Incorrect/Incomplete.
+      **Interesting connection:** {Link to related concept with example}
       
-      **The correct answer requires:**
-      • **${fields[0]}**: {Precise facts/values for this field}
-      • **${fields[1]}**: {Precise facts/values for this field}
-      {Continue for ALL fields, even if user got some right}
+      For GOOD answers (score 4):
+      ✓ Good grasp!
       
-      **Why this matters:** {1-2 sentences on practical importance}
+      **One clarification:** {Add the small detail they missed}
       
-      **Remember this connection:** {Specific link to ${
+      **This connects to:** {Relate to another concept}
+      
+      For PARTIAL understanding (score 2-3):
+      ✓ You're getting there!
+      
+      **Let me help you understand completely:**
+      • **${fields[0]}**: {Explain this field clearly with context}
+      • **${fields[1]}**: {Explain this field with examples}
+      {Continue for ALL fields, teaching not just listing}
+      
+      **Think of it this way:** {Analogy or memory aid}
+      
+      **How this connects:** {Link to ${
         otherConcepts[0] || "another concept"
-      } with concrete example}
+      } with explanation}
       
-      STRICT RULES:
-      - Be DIRECT - start with "Incorrect" or "Correct", not what they said
-      - List the ACTUAL FACTS for each field, not vague descriptions
-      - Use specific numbers, names, examples - not generalizations
-      - Maximum 1 line per field - just the essential facts
-      - Don't soften feedback - be precise about what's wrong
-      - Focus on memorizable facts, not explanations
+      For MINIMAL/NO understanding (score 0-1):
+      Let me teach you this step by step:
+      
+      **What "${item}" means:**
+      {Full explanatory paragraph about the concept}
+      
+      **Breaking down each aspect:**
+      • **${fields[0]}**: {Thorough explanation with examples}
+      • **${fields[1]}**: {Clear teaching with context}
+      {Continue for ALL fields with educational explanations}
+      
+      **Memory tip:** {Mnemonic or pattern to remember}
+      
+      **Why this matters:** {Real-world relevance and application}
+      
+      For "NO IDEA" or similar:
+      No worries! Let me teach you about ${item}:
+      
+      **The concept:** {Engaging introduction to what this is}
+      
+      **Understanding each part:**
+      • **${fields[0]}**: {Patient, clear explanation with examples}
+      • **${fields[1]}**: {Build understanding progressively}
+      {Teach ALL fields thoroughly}
+      
+      **How to remember:** {Memory technique or pattern}
+      
+      **Real example:** {Concrete example showing all fields}
+      
+      **Key takeaway:** {Simple summary to cement understanding}
+      
+      TEACHING PRINCIPLES:
+      - Be encouraging and patient, especially with "no idea" responses
+      - TEACH concepts, don't just list facts
+      - Use analogies and examples to make abstract ideas concrete
+      - Build understanding progressively
+      - Provide memory aids and patterns
+      - Connect to real-world applications
       ${
         existingUnderstanding === "None - Complete beginner"
-          ? "- Provide simple memory aids or mnemonics when helpful"
+          ? "- Use simple language and everyday examples"
           : existingUnderstanding === "Some - I know the basics"
-          ? "- Focus on connections to existing knowledge"
-          : "- Use technical language and expect precise terminology"
+          ? "- Build on their foundation with intermediate concepts"
+          : "- Explore nuanced aspects and edge cases"
       }`,
       prompt: `Item: ${item}
       Required fields: ${fields.join(", ")}
@@ -332,26 +376,53 @@ Provide substantive feedback that advances their understanding, then ask a speci
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `Evaluate the user's answer to an abstract question about ${concept.name}.
-      Be DIRECT about correctness.
-      Focus on concrete connections between concepts.
+      system: `You are evaluating the user's synthesis and understanding of ${concept.name}.
+      Your goal is to encourage deeper thinking and make connections clear.
+      Be supportive while teaching important concepts.
       
-      STRUCTURE:
-      ✓ or ❌ assessment
-      Bullet points of correct understanding
-      Specific connections to other concepts`,
+      APPROACH:
+      - Acknowledge what they understood correctly
+      - Teach missing connections through explanation
+      - Use examples to illustrate abstract relationships
+      - Build on their existing knowledge`,
       prompt: `Question: ${question}
       User answer: ${userAnswer}
       Concepts to connect: ${allConcepts.map((c) => c.name).join(", ")}
       
-      Format:
-      **✓ Correct:** or **❌ Incorrect/Incomplete:**
+      Response format based on understanding level:
       
-      **Key points:**
-      • {Specific fact or relationship}
-      • {Another specific fact}
+      For strong answers:
+      **✓ Excellent synthesis!**
       
-      **Connection:** {How this relates to another concept with specific example}`,
+      **What you captured well:**
+      • {Specific insight they demonstrated}
+      • {Another good connection they made}
+      
+      **Additional perspective:** {Deeper connection or implication they might not have considered}
+      
+      For partial understanding:
+      **✓ Good thinking!**
+      
+      **What you got right:**
+      • {Acknowledge correct elements}
+      
+      **Let me expand on this:**
+      {Paragraph explaining the deeper connections and relationships}
+      
+      **Key insight:** {The critical connection explained clearly with example}
+      
+      For minimal understanding or "I don't know":
+      **Let me help you see these connections:**
+      
+      **The relationship here:**
+      {Full paragraph teaching how these concepts connect}
+      
+      **Think about it this way:**
+      {Analogy or example that makes the abstract concrete}
+      
+      **In practice:** {Real-world application showing the connection}
+      
+      **Key takeaway:** {Simple summary of the main relationship}`,
     });
 
     return text;

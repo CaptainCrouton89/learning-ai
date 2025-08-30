@@ -3,7 +3,7 @@ import inquirer from "inquirer";
 import { AIService } from "../services/ai/index.js";
 import { CourseManager } from "../services/courseManager.js";
 import { ConceptAttempt, Course, LearningSession } from "../types/course.js";
-import { displayProgressSection } from "../utils/progressBar.js";
+import { createProgressBar, displayProgressSection } from "../utils/progressBar.js";
 
 export class HighLevelPhase {
   private ai = new AIService();
@@ -148,12 +148,24 @@ export class HighLevelPhase {
       );
 
       // Update comprehension for each topic addressed
+      const improvedTopics: Array<{ topic: string; oldScore: number; newScore: number }> = [];
+      
       for (const update of comprehensionUpdates) {
-        console.log(
-          chalk.cyan(
-            `Comprehension for "${update.topic}": ${update.comprehension}/5`
-          )
-        );
+        // Get current comprehension before update
+        const conceptProgress = session.conceptsProgress.get("high-level");
+        const currentComprehension = conceptProgress?.topicProgress.get(update.topic)?.currentComprehension ?? 0;
+        
+        // Only update if the new score is higher (never decrease)
+        const finalComprehension = Math.max(currentComprehension, update.comprehension);
+        
+        // Track improvements for display
+        if (finalComprehension > currentComprehension) {
+          improvedTopics.push({
+            topic: update.topic,
+            oldScore: currentComprehension,
+            newScore: finalComprehension
+          });
+        }
 
         // Create attempt record for each topic
         const attempt: ConceptAttempt = {
@@ -162,7 +174,7 @@ export class HighLevelPhase {
               .content,
           userAnswer: answer,
           aiResponse: {
-            comprehension: update.comprehension,
+            comprehension: finalComprehension,
             response: response,
             targetTopic: update.topic,
           },
@@ -175,6 +187,29 @@ export class HighLevelPhase {
           "high-level",
           attempt
         );
+      }
+      
+      // Display progress for improved topics only
+      if (improvedTopics.length > 0) {
+        console.log();
+        for (const improved of improvedTopics) {
+          const progressBar = createProgressBar({
+            current: improved.newScore,
+            max: 5,
+            filledChar: '█',
+            emptyChar: '░',
+            filledColor: improved.newScore === 5 ? chalk.green : chalk.cyan,
+            emptyColor: chalk.gray,
+            showRatio: true,
+            length: 10
+          });
+          
+          const icon = improved.newScore === 5 ? chalk.green('✓') : chalk.yellow('↑');
+          console.log(
+            `  ${icon} ${chalk.white(improved.topic)}: ${progressBar}`
+          );
+        }
+        console.log();
       }
 
       // Update unmastered topics list
