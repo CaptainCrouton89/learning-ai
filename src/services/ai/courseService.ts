@@ -103,6 +103,7 @@ export class CourseService {
 
     return {
       name: courseBase.name,
+      backgroundKnowledge: courseBase.backgroundKnowledge,
       concepts: conceptDetails,
       "drawing-connections": courseBase["drawing-connections"],
     };

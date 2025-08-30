@@ -13,17 +13,20 @@ export class HighLevelPhase {
     console.log(chalk.blue("\n📖 Let's start with a high-level overview\n"));
     console.log(
       chalk.gray(
-        "I'll ask you questions to build your foundational understanding.\n"
+        "I'll introduce key concepts and build your foundational understanding.\n"
       )
     );
     console.log(
-      chalk.gray("Type /skip at any time to skip the current topic.\n")
+      chalk.gray("Type /skip at any time if you're already familiar with a topic.\n")
     );
 
     await this.courseManager.updateSessionPhase(session, "high-level");
 
-    // Track high-level topics (course concepts)
-    const highLevelTopics = course.concepts.map((c) => c.name);
+    // Use backgroundKnowledge if available, otherwise use concept names as fallback
+    const highLevelTopics = course.backgroundKnowledge && course.backgroundKnowledge.length > 0
+      ? course.backgroundKnowledge
+      : course.concepts.map((c) => c.name);
+    
     let unmasteredTopics = this.courseManager.getUnmasteredTopics(
       session,
       "high-level",
@@ -215,7 +218,7 @@ export class HighLevelPhase {
     if (unmasteredTopics.length === 0) {
       console.log(
         chalk.yellow(
-          "\n🎯 Excellent! You've mastered the high-level overview!\n"
+          "\n🎯 Great! You have a solid foundation for the course!\n"
         )
       );
       this.displayHighLevelProgress(session, highLevelTopics);
@@ -224,12 +227,12 @@ export class HighLevelPhase {
       if (questionCount >= maxQuestions) {
         console.log(
           chalk.gray(
-            "Reached question limit. Moving forward, but you can review these topics later.\n"
+            "Let's move forward - you have enough foundation to continue.\n"
           )
         );
       } else {
         console.log(
-          chalk.gray(`Topics still to master: ${unmasteredTopics.join(", ")}\n`)
+          chalk.gray(`Topics we touched on: ${unmasteredTopics.join(", ")}\n`)
         );
       }
     }

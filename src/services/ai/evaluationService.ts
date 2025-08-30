@@ -21,7 +21,11 @@ export class EvaluationService {
     response: string;
     comprehensionUpdates: Array<{ topic: string; comprehension: number }>;
   }> {
-    const conceptNames = course.concepts.map((c) => c.name);
+    // Use backgroundKnowledge if available, otherwise fall back to concept names
+    const topicsToTeach = course.backgroundKnowledge && course.backgroundKnowledge.length > 0
+      ? course.backgroundKnowledge
+      : course.concepts.map((c) => c.name);
+    
     const comprehensionUpdates: Array<{
       topic: string;
       comprehension: number;
@@ -35,18 +39,18 @@ export class EvaluationService {
       const entries = Array.from(comprehensionProgress.entries());
       progressSummary = entries
         .map(([topic, score]) => {
-          const status = score >= 4 ? "✓" : score >= 2 ? "◐" : "○";
-          if (score < 4) topicsNeedingWork.push(topic);
+          const status = score >= 3 ? "✓" : score >= 2 ? "◐" : "○";
+          if (score < 3) topicsNeedingWork.push(topic);
           return `${topic}: ${score}/5 ${status}`;
         })
         .join("\n");
 
       if (topicsNeedingWork.length > 0) {
-        progressSummary += `\n\nTopics needing more exploration (< 4/5): ${topicsNeedingWork.join(
+        progressSummary += `\n\nTopics to explore (< 3/5): ${topicsNeedingWork.join(
           ", "
         )}`;
       } else {
-        progressSummary += `\n\nAll topics well understood! Focus on synthesis and connections.`;
+        progressSummary += `\n\nGreat foundation! Ready to dive into the main content.`;
       }
     }
 
@@ -55,27 +59,23 @@ export class EvaluationService {
       stopWhen: stepCountIs(5), // stop after 5 steps if tools were called
       system: `${highLevelPrompts.evaluationSystem(
         course.name,
-        conceptNames,
+        topicsToTeach,
         existingUnderstanding
       )}
 
-You must follow these steps in order:
-1. First, call the update_comprehension tool for EACH topic that the user addressed in their response. Score their understanding from 0-5:
-   - 0-1: No understanding or incorrect
-   - 2-3: Partial understanding  
-   - 4-5: Good to excellent understanding
-2. After updating all relevant comprehension scores, provide substantive feedback on their response.
-3. End with a NEW follow-up question that:
-   - Explores a DIFFERENT aspect than what was just discussed
-   - Focuses on topics with scores below 4 (from progress below)
-   - Does NOT directly repeat or rephrase the topic just answered
-   - Builds knowledge progressively without redundancy
-   - If all topics are mastered (4+), ask synthesis questions connecting multiple topics
+You must follow these steps:
+1. Call update_comprehension for topics the user addressed. Be GENEROUS with scoring:
+   - 0-2: Needs teaching (provide it immediately!)
+   - 3: Basic understanding - GOOD ENOUGH to continue
+   - 4: Solid grasp
+   - 5: Impressive depth
+2. Provide ENCOURAGING, TEACHING-focused feedback
+3. Ask an ENGAGING follow-up that explores new aspects
 
-Current topic progress:
+Current progress:
 ${progressSummary}
 
-IMPORTANT: Avoid asking about the same specific information the user just addressed. Move to unexplored aspects of low-scoring topics.`,
+REMEMBER: This is overview/teaching phase. Score 3 = ready to proceed. Be supportive!`,
       prompt: `<user-response>
 ${userAnswer}
 </user-response>
@@ -104,7 +104,7 @@ Evaluate comprehension, provide feedback, then ask a NEW question that:
           description:
             "Update comprehension score for a specific topic the user addressed",
           inputSchema: z.object({
-            topic: z.enum(conceptNames as [string, ...string[]]),
+            topic: z.enum(topicsToTeach as [string, ...string[]]),
             comprehension: z.number().min(0).max(5).describe("Score from 0-5"),
           }),
           execute: async ({ topic, comprehension }) => {

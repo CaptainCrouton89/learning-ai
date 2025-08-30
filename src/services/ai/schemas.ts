@@ -32,6 +32,9 @@ export const ComprehensionUpdateSchema = (targetTopicOptions: string[]) =>
 
 export const CourseGenerationSchema = z.object({
   name: z.string(),
+  backgroundKnowledge: z.array(z.string())
+    .describe("Prerequisite concepts and background knowledge the learner should understand before diving into the main concepts. Empty for expert-level learners.")
+    .optional(),
   concepts: z.array(
     z.object({
       name: z.string(),

@@ -12,9 +12,10 @@ export class GenerationService {
     existingUnderstanding: string,
     isFirstQuestion: boolean = false
   ): Promise<string> {
+    const backgroundTopics = course.backgroundKnowledge || [];
     const { text } = await generateText({
       model: this.model,
-      system: highLevelPrompts.questionSystem(course.name, existingUnderstanding),
+      system: highLevelPrompts.questionSystem(course.name, backgroundTopics, existingUnderstanding),
       prompt: `<context>
 ${
   conversationHistory.length > 0
