@@ -2,7 +2,7 @@ import chalk from "chalk";
 import { promises as fs } from "fs";
 import inquirer from "inquirer";
 import ora from "ora";
-import { AIService } from "../services/ai.js";
+import { AIService } from "../services/ai/index.js";
 import { CourseManager } from "../services/courseManager.js";
 import { Course } from "../types/course.js";
 

@@ -1,20 +1,31 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import { AIService } from '../services/ai.js';
+import { AIService } from '../services/ai/index.js';
 import { CourseManager } from '../services/courseManager.js';
-import { Course, LearningSession } from '../types/course.js';
+import { Course, LearningSession, ConceptAttempt } from '../types/course.js';
+import { displayProgressSection } from '../utils/progressBar.js';
 
 export class HighLevelPhase {
   private ai = new AIService();
   private courseManager = new CourseManager();
-  private questionCount = 0;
-  private maxQuestions = 15;
 
   async start(course: Course, session: LearningSession): Promise<void> {
     console.log(chalk.blue('\n📖 Let\'s start with a high-level overview\n'));
     console.log(chalk.gray('I\'ll ask you questions to build your foundational understanding.\n'));
+    console.log(chalk.gray('Type /skip at any time to skip the current topic.\n'));
 
     await this.courseManager.updateSessionPhase(session, 'high-level');
+
+    // Track high-level topics (course concepts)
+    const highLevelTopics = course.concepts.map(c => c.name);
+    let unmasteredTopics = this.courseManager.getUnmasteredTopics(
+      session,
+      'high-level',
+      highLevelTopics
+    );
+
+    // Show initial progress
+    this.displayHighLevelProgress(session, highLevelTopics);
 
     // Generate the first question to start the conversation
     const firstQuestion = await this.ai.generateHighLevelQuestion(
@@ -24,45 +35,138 @@ export class HighLevelPhase {
     console.log(chalk.cyan(`\n${firstQuestion}\n`));
     await this.courseManager.addConversationEntry(session, 'assistant', firstQuestion);
 
-    while (this.questionCount < this.maxQuestions) {
+    let questionCount = 0;
+    const maxQuestions = 15; // Safety limit
+
+    while (unmasteredTopics.length > 0 && questionCount < maxQuestions) {
       const { answer } = await inquirer.prompt([{
         type: 'input',
         name: 'answer',
-        message: 'Your answer:',
-        validate: (input) => input.length > 0 || 'Please provide an answer'
+        message: 'Your answer (or /skip to skip):',
+        validate: (input) => input.length > 0 || 'Please provide an answer or type /skip'
       }]);
+
+      // Handle skip command
+      if (answer.toLowerCase() === '/skip') {
+        console.log(chalk.yellow('\n⏭️  Skipping this topic...'));
+        
+        // Create a skip attempt with max comprehension
+        const skipAttempt: ConceptAttempt = {
+          question: session.conversationHistory[session.conversationHistory.length - 1].content,
+          userAnswer: '/skip',
+          aiResponse: {
+            comprehension: 5,
+            response: 'Topic skipped by user',
+            targetTopic: unmasteredTopics[0] // Assign to first unmastered topic
+          },
+          timestamp: new Date()
+        };
+        
+        await this.courseManager.updateConceptTopicProgress(session, 'high-level', skipAttempt);
+        await this.courseManager.addConversationEntry(session, 'user', '/skip');
+        await this.courseManager.addConversationEntry(session, 'assistant', 'Topic marked as understood (skipped).');
+        
+        // Update unmastered topics list
+        unmasteredTopics = this.courseManager.getUnmasteredTopics(
+          session,
+          'high-level',
+          highLevelTopics
+        );
+        
+        // Generate next question if topics remain
+        if (unmasteredTopics.length > 0) {
+          const nextQuestion = await this.ai.generateHighLevelQuestion(
+            course,
+            session.conversationHistory.slice(-10)
+          );
+          console.log(chalk.cyan(`\n${nextQuestion}\n`));
+          await this.courseManager.addConversationEntry(session, 'assistant', nextQuestion);
+        }
+        
+        continue;
+      }
 
       await this.courseManager.addConversationEntry(session, 'user', answer);
 
-      // Get feedback and next question in one AI call (except for last iteration)
-      const isLastQuestion = this.questionCount === this.maxQuestions - 1;
-      const feedbackWithFollowUp = await this.ai.evaluateHighLevelAnswer(
-        answer,
-        course,
-        session.conversationHistory.slice(-10),
-        !isLastQuestion // Include follow-up question unless it's the last one
+      // Get feedback and comprehension scores in parallel
+      const [response, comprehensionUpdates] = await Promise.all([
+        this.ai.generateHighLevelResponse(
+          answer,
+          course,
+          session.conversationHistory.slice(-10),
+          unmasteredTopics.length > 0 // Always include follow-up when topics remain unmastered
+        ),
+        this.ai.evaluateHighLevelComprehension(
+          answer,
+          course,
+          session.conversationHistory.slice(-10)
+        )
+      ]);
+
+      // Display feedback first
+      console.log(chalk.green(`\n${response}\n`));
+      await this.courseManager.addConversationEntry(session, 'assistant', response);
+
+      // Update comprehension for each topic addressed
+      for (const update of comprehensionUpdates) {
+        console.log(chalk.cyan(`Comprehension for "${update.topic}": ${update.comprehension}/5`));
+        
+        // Create attempt record for each topic
+        const attempt: ConceptAttempt = {
+          question: session.conversationHistory[session.conversationHistory.length - 3].content,
+          userAnswer: answer,
+          aiResponse: {
+            comprehension: update.comprehension,
+            response: response,
+            targetTopic: update.topic
+          },
+          timestamp: new Date()
+        };
+
+        // Update topic progress
+        await this.courseManager.updateConceptTopicProgress(session, 'high-level', attempt);
+      }
+
+      // Update unmastered topics list
+      unmasteredTopics = this.courseManager.getUnmasteredTopics(
+        session,
+        'high-level',
+        highLevelTopics
       );
 
-      console.log(chalk.green(`\n${feedbackWithFollowUp}\n`));
-      await this.courseManager.addConversationEntry(session, 'assistant', feedbackWithFollowUp);
+      questionCount++;
 
-      this.questionCount++;
+      // Show progress every 3 questions
+      if (questionCount % 3 === 0) {
+        this.displayHighLevelProgress(session, highLevelTopics);
+        
+        if (unmasteredTopics.length > 0 && questionCount < maxQuestions - 3) {
+          const { continuePhase } = await inquirer.prompt([{
+            type: 'confirm',
+            name: 'continuePhase',
+            message: 'Would you like to continue with more high-level questions?',
+            default: true
+          }]);
 
-      if (this.questionCount % 5 === 0 && this.questionCount < this.maxQuestions) {
-        const { continuePhase } = await inquirer.prompt([{
-          type: 'confirm',
-          name: 'continuePhase',
-          message: 'Would you like to continue with more high-level questions?',
-          default: true
-        }]);
-
-        if (!continuePhase) {
-          break;
+          if (!continuePhase) {
+            console.log(chalk.yellow('\nStopping early. You can resume to complete the overview.'));
+            break;
+          }
         }
       }
     }
 
-    console.log(chalk.yellow('\n🎯 Great job with the overview!\n'));
+    if (unmasteredTopics.length === 0) {
+      console.log(chalk.yellow('\n🎯 Excellent! You\'ve mastered the high-level overview!\n'));
+      this.displayHighLevelProgress(session, highLevelTopics);
+    } else {
+      console.log(chalk.yellow('\n📝 Good progress with the overview!\n'));
+      if (questionCount >= maxQuestions) {
+        console.log(chalk.gray('Reached question limit. Moving forward, but you can review these topics later.\n'));
+      } else {
+        console.log(chalk.gray(`Topics still to master: ${unmasteredTopics.join(', ')}\n`));
+      }
+    }
 
     const { hasQuestions } = await inquirer.prompt([{
       type: 'confirm',
@@ -103,14 +207,15 @@ export class HighLevelPhase {
 
       console.log(chalk.gray('\nLet me explain...\n'));
 
-      const answer = await this.ai.evaluateHighLevelAnswer(
+      const response = await this.ai.generateHighLevelResponse(
         question,
         course,
-        session.conversationHistory.slice(-10)
+        session.conversationHistory.slice(-10),
+        false
       );
 
-      console.log(chalk.green(answer));
-      await this.courseManager.addConversationEntry(session, 'assistant', answer);
+      console.log(chalk.green(response));
+      await this.courseManager.addConversationEntry(session, 'assistant', response);
 
       const { moreQuestions } = await inquirer.prompt([{
         type: 'confirm',
@@ -122,4 +227,16 @@ export class HighLevelPhase {
       askingQuestions = moreQuestions;
     }
   }
+
+  private displayHighLevelProgress(session: LearningSession, topics: string[]): void {
+    console.log(chalk.blue('\n📊 Overview Progress:'));
+    const comprehensionMap = this.courseManager.getAllTopicsComprehension(
+      session,
+      'high-level',
+      topics
+    );
+    
+    displayProgressSection('📊 Overview Progress:', comprehensionMap);
+  }
+
 }

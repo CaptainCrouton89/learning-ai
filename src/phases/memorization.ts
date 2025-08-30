@@ -1,6 +1,6 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import { AIService } from '../services/ai.js';
+import { AIService } from '../services/ai/index.js';
 import { CourseManager } from '../services/courseManager.js';
 import { Course, Concept, LearningSession } from '../types/course.js';
 

@@ -1,8 +1,9 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import { AIService } from '../services/ai.js';
+import { AIService } from '../services/ai/index.js';
 import { CourseManager } from '../services/courseManager.js';
 import { Course, Concept, LearningSession, ConceptAttempt } from '../types/course.js';
+import { displayProgressSection } from '../utils/progressBar.js';
 
 export class ConceptLearningPhase {
   private ai = new AIService();
@@ -79,9 +80,49 @@ export class ConceptLearningPhase {
       const { answer } = await inquirer.prompt([{
         type: 'input',
         name: 'answer',
-        message: 'Your thoughts:',
-        validate: (input) => input.length > 0 || 'Please share your thoughts'
+        message: 'Your thoughts (or /skip to skip):',
+        validate: (input) => input.length > 0 || 'Please share your thoughts or type /skip'
       }]);
+
+      // Handle skip command
+      if (answer.toLowerCase() === '/skip') {
+        console.log(chalk.yellow('\n⏭️  Skipping this topic...'));
+        
+        // Create a skip attempt with max comprehension
+        const skipAttempt: ConceptAttempt = {
+          question: session.conversationHistory[session.conversationHistory.length - 1].content,
+          userAnswer: '/skip',
+          aiResponse: {
+            comprehension: 5,
+            response: 'Topic skipped by user',
+            targetTopic: unmasteredTopics[0] // Assign to first unmastered topic
+          },
+          timestamp: new Date()
+        };
+        
+        await this.courseManager.updateConceptTopicProgress(session, concept.name, skipAttempt);
+        await this.courseManager.addConversationEntry(session, 'user', '/skip');
+        await this.courseManager.addConversationEntry(session, 'assistant', 'Topic marked as mastered (skipped).');
+        
+        // Update unmastered topics list
+        unmasteredTopics = this.courseManager.getUnmasteredTopics(
+          session,
+          concept.name,
+          concept['high-level']
+        );
+        
+        // Generate next question if topics remain
+        if (unmasteredTopics.length > 0) {
+          const nextQuestion = await this.ai.generateConceptQuestion(
+            concept,
+            session.conversationHistory.slice(-10)
+          );
+          console.log(chalk.cyan(`\n${nextQuestion}\n`));
+          await this.courseManager.addConversationEntry(session, 'assistant', nextQuestion);
+        }
+        
+        continue;
+      }
 
       await this.courseManager.addConversationEntry(session, 'user', answer);
 
@@ -165,24 +206,12 @@ export class ConceptLearningPhase {
   }
 
   private displayTopicProgress(session: LearningSession, concept: Concept): void {
-    console.log(chalk.blue('\n📊 Topic Progress:'));
     const comprehensionMap = this.courseManager.getAllTopicsComprehension(
       session,
       concept.name,
       concept['high-level']
     );
     
-    comprehensionMap.forEach((comprehension, topic) => {
-      const progressBar = this.getProgressBar(comprehension);
-      const status = comprehension >= 5 ? chalk.green('✓') : chalk.yellow('○');
-      console.log(`  ${status} ${topic}: ${progressBar} (${comprehension}/5)`);
-    });
-    console.log();
-  }
-
-  private getProgressBar(comprehension: number): string {
-    const filled = '█'.repeat(comprehension);
-    const empty = '░'.repeat(5 - comprehension);
-    return chalk.cyan(filled) + chalk.gray(empty);
+    displayProgressSection('📊 Topic Progress:', comprehensionMap);
   }
 }
