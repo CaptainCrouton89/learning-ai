@@ -68,26 +68,17 @@ export class InitializationPhase {
       ]
     }]);
 
-    console.log(chalk.yellow('\n🤔 Let me suggest some focus areas...\n'));
+    console.log(chalk.cyan('\n📝 Tell me what you want to focus on'));
+    console.log(chalk.gray('For example: "I want to understand the basics and practical applications"'));
+    console.log(chalk.gray('or: "Help me master advanced techniques and edge cases"'));
+    console.log(chalk.gray('or: "I need to learn how to troubleshoot common problems"\n'));
     
-    const suggestedTopics = await this.generateTopicSuggestions(topic, documentContent);
-    
-    // Display suggested topics
-    console.log(chalk.cyan('Suggested topics:'));
-    suggestedTopics.forEach((topic, index) => {
-      console.log(chalk.gray(`  ${index + 1}. ${topic}`));
-    });
-    console.log(chalk.gray('\nYou can select from the suggestions above (e.g., "1,3,5") or type your own topics.'));
-    
-    const { topicInput } = await inquirer.prompt([{
+    const { focusDescription } = await inquirer.prompt([{
       type: 'input',
-      name: 'topicInput',
-      message: 'Which topics would you like to focus on? (comma-separated)',
-      validate: (input) => input.trim().length > 0 || 'Please enter at least one topic'
+      name: 'focusDescription',
+      message: 'What aspects of ' + topic + ' do you want to focus on?',
+      validate: (input) => input.trim().length > 10 || 'Please describe what you want to learn'
     }]);
-    
-    // Parse the input - could be numbers referencing suggestions or custom text
-    const selectedTopics = this.parseTopicInput(topicInput, suggestedTopics);
 
     const spinner = ora('Creating your personalized course...').start();
     
@@ -97,7 +88,7 @@ export class InitializationPhase {
         documentContent,
         timeAvailable,
         depth,
-        selectedTopics
+        focusDescription
       );
 
       await this.courseManager.saveCourse(course);
@@ -116,52 +107,4 @@ export class InitializationPhase {
     }
   }
 
-  private async generateTopicSuggestions(topic: string, documentContent: string | null): Promise<string[]> {
-    if (documentContent) {
-      return [
-        'Core concepts and definitions',
-        'Practical applications',
-        'Common patterns and best practices',
-        'Advanced techniques',
-        'Troubleshooting and edge cases'
-      ];
-    }
-
-    switch (topic.toLowerCase()) {
-      case 'wine':
-        return [
-          'Wine types and characteristics',
-          'Wine regions and terroir',
-          'Tasting and evaluation',
-          'Food pairing principles',
-          'Production methods'
-        ];
-      default:
-        return [
-          'Fundamental concepts',
-          'Key terminology',
-          'Practical applications',
-          'Common examples',
-          'Advanced topics'
-        ];
-    }
-  }
-
-  private parseTopicInput(input: string, suggestions: string[]): string[] {
-    const parts = input.split(',').map(s => s.trim()).filter(s => s.length > 0);
-    const selectedTopics: string[] = [];
-    
-    for (const part of parts) {
-      // Check if it's a number reference to a suggestion
-      const num = parseInt(part);
-      if (!isNaN(num) && num > 0 && num <= suggestions.length) {
-        selectedTopics.push(suggestions[num - 1]);
-      } else {
-        // It's custom text
-        selectedTopics.push(part);
-      }
-    }
-    
-    return selectedTopics;
-  }
 }

@@ -19,11 +19,11 @@ const CourseGenerationSchema = z.object({
 });
 
 const ConceptDetailSchema = z.object({
-  "high-level": z.array(z.string()),
+  "high-level": z.array(z.string()).describe("List of high-level topics to understand about this concept"),
   memorize: z.object({
-    fields: z.array(z.string()),
-    items: z.array(z.string()),
-  }),
+    fields: z.array(z.string()).describe("Column headers for the flashcard table (e.g., 'Term', 'Definition', 'Example')"),
+    items: z.array(z.string()).describe("List of item names/terms to memorize (e.g., 'Photosynthesis', 'Mitosis'). Just the names, not the full data"),
+  }).describe("Flashcard structure with field headers and item names to memorize"),
 });
 
 export class AIService {
@@ -35,14 +35,17 @@ export class AIService {
     documentContent: string | null,
     timeAvailable: string,
     depth: string,
-    selectedTopics: string[]
+    learningGoals: string
   ): Promise<Course> {
     console.log("Generating course structure...");
 
     const basePrompt = `Create a course structure for learning about ${topic}.
     Time available: ${timeAvailable}
     Depth level: ${depth}
-    Selected topics to focus on: ${selectedTopics.join(", ")}
+    
+    The learner has described their goals as:
+    ${learningGoals}
+    
     ${documentContent ? `Reference document content: ${documentContent}` : ""}`;
 
     const { object: courseBase } = await generateObject({
@@ -57,7 +60,9 @@ export class AIService {
           model: this.smartModel,
           schema: ConceptDetailSchema,
           prompt: `Generate detailed learning structure for the concept "${concept.name}" in the course "${courseBase.name}".
-          Include high-level topics to understand and items to memorize with their fields.`,
+          Include high-level topics to understand and items to memorize.
+          For memorize.items, provide ONLY the item names/terms as strings (e.g., ["Photosynthesis", "Mitosis", "Cell Division"]).
+          For memorize.fields, provide the column headers that describe what aspects to learn about each item (e.g., ["Term", "Definition", "Example"]).`,
         });
         return {
           name: concept.name,
@@ -99,11 +104,11 @@ export class AIService {
     const { text } = await generateText({
       model: this.model,
       system: `You are teaching ${course.name}. 
-      Provide feedback on the user's answer, correct if necessary, and ask a follow-up question.
+      Provide feedback on the user's answer, correct if necessary.
       Be encouraging but accurate.`,
       prompt: `User answered: ${userAnswer}
       Conversation history: ${JSON.stringify(conversationHistory)}
-      Provide feedback and ask a follow-up question.`,
+      Provide feedback on this answer.`,
     });
 
     return text;
