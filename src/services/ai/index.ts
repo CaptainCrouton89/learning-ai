@@ -11,7 +11,7 @@ export class AIService {
   private courseService = new CourseService();
   private generationService = new GenerationService();
   private evaluationService = new EvaluationService();
-  private fastModel = openai("gpt-4.1-mini");
+  private fastModel = openai("gpt-5-mini");
 
   async analyzeTopic(
     topic: string,

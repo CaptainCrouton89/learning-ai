@@ -7,7 +7,7 @@ import { z } from "zod";
 
 export class CourseService {
   private smartModel = openai("gpt-4.1");
-  private fastModel = openai("gpt-4.1-mini");
+  private fastModel = openai("gpt-5-mini");
 
   async analyzeTopic(
     topic: string,

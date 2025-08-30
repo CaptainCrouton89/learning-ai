@@ -4,7 +4,7 @@ import { Concept, Course } from "../../types/course.js";
 import { conceptLearningPrompts, highLevelPrompts } from "./prompts.js";
 
 export class GenerationService {
-  private model = openai("gpt-4.1-mini");
+  private model = openai("gpt-5-mini");
 
   async generateHighLevelQuestion(
     course: Course,

@@ -9,7 +9,7 @@ import {
 } from "./schemas.js";
 
 export class EvaluationService {
-  private model = openai("gpt-4.1-mini");
+  private model = openai("gpt-5-mini");
 
   async generateHighLevelResponse(
     userAnswer: string,
@@ -96,7 +96,12 @@ ${progressSummary}
 </current-progress>
 
 <instruction>
-Evaluate comprehension, provide feedback, then ask a NEW question that:
+CRITICAL: If the user says "no idea" or shows low comprehension:
+1. Look at the conversation history to find the EXACT question that was asked
+2. Answer that SPECIFIC question directly - don't give generic background
+3. Teach the particular concept/mechanism that was asked about
+
+Evaluate comprehension, provide targeted feedback addressing their specific question, then ask a NEW question that:
 1. Covers a different aspect than what was just discussed
 2. Targets topics scoring below 4/5
 3. Avoids repeating information from the last 2-3 exchanges
@@ -179,7 +184,13 @@ ${conversationHistory
   .join("\n\n")}
 </context>
 
-First, evaluate and update comprehension for each topic addressed. Then provide substantive feedback that advances their understanding, and ask a specific follow-up question.`,
+IMPORTANT: The user was asked a specific question (found in the conversation history above).
+If they say "no idea" or show low understanding, you MUST:
+1. Identify the exact question that was asked
+2. Answer that specific question directly - not generic information
+3. Teach the specific mechanism/concept that was asked about
+
+First, evaluate and update comprehension for topics actually addressed. Then provide targeted feedback that answers their specific question and advances understanding.`,
       stopWhen: stepCountIs(5),
       tools: {
         update_comprehension: tool({
