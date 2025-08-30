@@ -63,9 +63,9 @@ export class MemorizationPhase {
     console.log();
 
     const { answer } = await inquirer.prompt([{
-      type: 'editor',
+      type: 'input',
       name: 'answer',
-      message: 'Your answer (press Enter to open editor):',
+      message: 'Your answer:',
       validate: (input) => input.trim().length > 0 || 'Please provide an answer'
     }]);
 
