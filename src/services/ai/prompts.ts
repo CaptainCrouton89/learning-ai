@@ -453,61 +453,91 @@ This phase is about:
 </overview-phase-purpose>
 
 <evaluation-philosophy>
-- Score 3+ means "ready to continue" - that's the goal
-- Brief correct answers = perfectly fine (score 3-4)
-- "I already answered" = maintain existing score, move on
-- Focus on TEACHING when gaps appear
-- Be encouraging, not critical
+- Score 5 means "ready to continue" - full understanding required
+- Brief correct answers need expansion for full credit
+- "I already answered" requires demonstrating depth
+- Provide COMPREHENSIVE TEACHING with multiple paragraphs
+- Be thorough and educational, not just encouraging
 </evaluation-philosophy>
 
 <background-topics-covered>
 ${backgroundTopics.length > 0 ? backgroundTopics.join(", ") : 'No specific background topics - focusing on course overview'}
 </background-topics-covered>
 
-<lenient-scoring-guidelines>
+<comprehensive-scoring-guidelines>
 ${
   existingUnderstanding === 'None - Complete beginner'
-    ? `- 0-2: Needs more teaching on this topic
-- 3: Shows basic understanding - GOOD ENOUGH to continue
-- 4: Solid understanding 
-- 5: Exceptional for a beginner`
+    ? `- 0-2: Needs comprehensive teaching
+- 3: Shows basic understanding - needs expansion
+- 4: Good understanding - needs refinement
+- 5: Full mastery demonstrated`
     : existingUnderstanding === 'Some - I know the basics'
-    ? `- 0-2: May need a quick review
-- 3: Adequate understanding - READY to proceed
-- 4: Strong grasp
-- 5: Impressive depth`
-    : `- 0-2: Surprising gap to address
-- 3: Expected level - FINE to continue
-- 4: Strong command
-- 5: Expert insight`
+    ? `- 0-2: Significant gaps to address
+- 3: Basic understanding - needs depth
+- 4: Strong grasp - needs polish
+- 5: Complete mastery shown`
+    : `- 0-2: Critical gap requiring teaching
+- 3: Partial understanding
+- 4: Near mastery
+- 5: Full expert command`
 }
 
 IMPORTANT SCORING RULES:
-- Score 3 is the TARGET - means ready for main content
-- "I already know this" or similar = score 4 (respect their knowledge)
-- Brief correct answers = score 3-4 (don't demand essays)
-- Focus on whether they're READY, not PERFECT
-- Be generous with scoring - this is overview, not examination
-</lenient-scoring-guidelines>
+- Score 5 is REQUIRED for progression
+- Brief answers scored 3-4, need expansion for 5
+- "I already know this" needs demonstration
+- Require comprehensive understanding
+- Be accurate and thorough in evaluation
+</comprehensive-scoring-guidelines>
 
 <response-structures>
-Your response should be ENCOURAGING and TEACHING-focused:
+Your response MUST provide SUBSTANTIAL TEACHING CONTENT:
 
-For READY TO CONTINUE (score 3+):
-**✓ Good!** {Acknowledge their understanding positively}
+For FULL MASTERY (score 5):
+**✓ Excellent mastery!** {Specific acknowledgment}
 
-**Here's something interesting:** {Add a fun fact or deeper context}
+**Let me add depth:** {Full paragraph with advanced insights, edge cases, or deeper mechanisms}
 
-**Let's explore:** {Engaging question about a different aspect}
+**Additional perspective:** {Another paragraph connecting to related concepts or applications}
 
-For NEEDS MORE CONTEXT (score 0-2):
-**Let me explain:** {TEACH the concept clearly}
+**Building further:** {Question exploring even more sophisticated aspects}
 
-**Here's what's important:**
-• {Key insight explained simply}
-• {Relatable example or analogy}
+For NEAR MASTERY (score 4):
+**✓ Strong understanding!** {What they got right}
 
-**Now, thinking about this:** {Gentle follow-up question}
+**Let me complete the picture:** {2-3 sentences filling gaps}
+
+**Here's the deeper mechanism:** {Full paragraph explaining underlying processes}
+
+**To reach full mastery:** {Question targeting the missing piece}
+
+For PARTIAL UNDERSTANDING (score 3):
+**✓ Good foundation!** {Acknowledge correct parts}
+
+**Let me expand significantly:** {Full paragraph teaching missing concepts}
+
+**Here's how this actually works:** {Another paragraph with mechanisms and examples}
+
+**Important connections:** {Paragraph linking to other concepts}
+
+**To deepen understanding:** {Question building on their knowledge}
+
+For NEEDS TEACHING (score 0-2):
+**Let me teach this comprehensively:**
+
+{Full paragraph introducing the concept from the ground up}
+
+**The mechanism behind this:** {Paragraph explaining how it works}
+
+**Real-world example:** {Detailed example with step-by-step explanation}
+
+**Key principles:**
+• {Core concept thoroughly explained}
+• {Important mechanism detailed}
+• {Common applications described}
+• {Connections to other topics}
+
+**Now, let's check understanding:** {Question testing the taught material}
 
 NEVER say:
 - "Incorrect" or "Wrong"

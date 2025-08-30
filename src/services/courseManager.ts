@@ -285,9 +285,8 @@ export class CourseManager {
     const conceptProgress = session.conceptsProgress.get(conceptName);
     if (!conceptProgress) return allTopics;
 
-    // For high-level phase, score 3 is sufficient (ready to proceed)
-    // For concept learning phase, keep score 5 as mastery
-    const threshold = conceptName === "high-level" ? 3 : 5;
+    // Require full mastery (5/5) for all phases before proceeding
+    const threshold = 5;
 
     return allTopics.filter(topic => {
       const topicProgress = conceptProgress.topicProgress.get(topic);

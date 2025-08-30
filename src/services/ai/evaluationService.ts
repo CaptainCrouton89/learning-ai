@@ -39,18 +39,18 @@ export class EvaluationService {
       const entries = Array.from(comprehensionProgress.entries());
       progressSummary = entries
         .map(([topic, score]) => {
-          const status = score >= 3 ? "✓" : score >= 2 ? "◐" : "○";
-          if (score < 3) topicsNeedingWork.push(topic);
+          const status = score >= 5 ? "✓" : score >= 3 ? "◐" : "○";
+          if (score < 5) topicsNeedingWork.push(topic);
           return `${topic}: ${score}/5 ${status}`;
         })
         .join("\n");
 
       if (topicsNeedingWork.length > 0) {
-        progressSummary += `\n\nTopics to explore (< 3/5): ${topicsNeedingWork.join(
+        progressSummary += `\n\nTopics needing mastery (< 5/5): ${topicsNeedingWork.join(
           ", "
         )}`;
       } else {
-        progressSummary += `\n\nGreat foundation! Ready to dive into the main content.`;
+        progressSummary += `\n\nAll topics mastered! Ready to dive into the main content.`;
       }
     }
 
@@ -64,18 +64,20 @@ export class EvaluationService {
       )}
 
 You must follow these steps:
-1. Call update_comprehension for topics the user addressed. Be GENEROUS with scoring:
-   - 0-2: Needs teaching (provide it immediately!)
-   - 3: Basic understanding - GOOD ENOUGH to continue
-   - 4: Solid grasp
-   - 5: Impressive depth
-2. Provide ENCOURAGING, TEACHING-focused feedback
+1. Call update_comprehension for topics the user addressed. Score accurately:
+   - 0-2: Needs comprehensive teaching
+   - 3-4: Partial understanding - needs more depth
+   - 5: Full mastery demonstrated
+2. Provide SUBSTANTIVE, DETAILED teaching feedback (minimum 2-3 paragraphs)
+   - Include mechanisms, examples, and connections
+   - Expand on what they said with additional context
+   - Teach missing pieces comprehensively
 3. Ask an ENGAGING follow-up that explores new aspects
 
 Current progress:
 ${progressSummary}
 
-REMEMBER: This is overview/teaching phase. Score 3 = ready to proceed. Be supportive!`,
+REMEMBER: Score 5 = ready to proceed. Provide comprehensive teaching content!`,
       prompt: `<user-response>
 ${userAnswer}
 </user-response>
