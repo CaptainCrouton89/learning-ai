@@ -39,7 +39,7 @@ export class AIService {
     course: Course,
     conversationHistory: Array<{ role: string; content: string }>,
     includeFollowUp: boolean = false
-  ): Promise<string> {
+  ): Promise<{ response: string; comprehensionUpdates: Array<{ topic: string; comprehension: number }> }> {
     return this.evaluationService.generateHighLevelResponse(
       userAnswer,
       course,
@@ -79,6 +79,34 @@ export class AIService {
     conversationHistory: Array<{ role: string; content: string }>
   ): Promise<string> {
     return this.generationService.generateConceptQuestion(
+      concept,
+      conversationHistory
+    );
+  }
+
+  async generateConceptResponse(
+    userAnswer: string,
+    concept: Concept,
+    conversationHistory: Array<{ role: string; content: string }>,
+    includeFollowUp: boolean = false,
+    unmasteredTopics?: string[]
+  ): Promise<{ response: string; comprehensionUpdates: Array<{ topic: string; comprehension: number }> }> {
+    return this.evaluationService.generateConceptResponse(
+      userAnswer,
+      concept,
+      conversationHistory,
+      includeFollowUp,
+      unmasteredTopics
+    );
+  }
+
+  async evaluateConceptComprehension(
+    userAnswer: string,
+    concept: Concept,
+    conversationHistory: Array<{ role: string; content: string }>
+  ): Promise<Array<{ topic: string; comprehension: number }>> {
+    return this.evaluationService.evaluateConceptComprehension(
+      userAnswer,
       concept,
       conversationHistory
     );

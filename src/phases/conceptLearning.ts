@@ -126,8 +126,8 @@ export class ConceptLearningPhase {
 
       await this.courseManager.addConversationEntry(session, 'user', answer);
 
-      // Get feedback with comprehension score
-      const evaluation = await this.ai.evaluateConceptAnswer(
+      // Get feedback with comprehension scores in a single call
+      const { response, comprehensionUpdates } = await this.ai.generateConceptResponse(
         answer,
         concept,
         session.conversationHistory.slice(-10),
@@ -135,22 +135,29 @@ export class ConceptLearningPhase {
         unmasteredTopics
       );
 
-      // Create attempt record
-      const attempt: ConceptAttempt = {
-        question: session.conversationHistory[session.conversationHistory.length - 2].content,
-        userAnswer: answer,
-        aiResponse: evaluation,
-        timestamp: new Date()
-      };
+      // Display feedback first
+      console.log(chalk.green(`\n${response}\n`));
+      await this.courseManager.addConversationEntry(session, 'assistant', response);
 
-      // Update topic progress
-      await this.courseManager.updateConceptTopicProgress(session, concept.name, attempt);
+      // Update comprehension for each topic addressed
+      for (const update of comprehensionUpdates) {
+        console.log(chalk.cyan(`Comprehension for "${update.topic}": ${update.comprehension}/5`));
+        
+        // Create attempt record for each topic
+        const attempt: ConceptAttempt = {
+          question: session.conversationHistory[session.conversationHistory.length - 3].content,
+          userAnswer: answer,
+          aiResponse: {
+            comprehension: update.comprehension,
+            response: response,
+            targetTopic: update.topic
+          },
+          timestamp: new Date()
+        };
 
-      // Display feedback with comprehension score
-      console.log(chalk.green(`\n${evaluation.response}\n`));
-      console.log(chalk.cyan(`Comprehension for "${evaluation.targetTopic}": ${evaluation.comprehension}/5`));
-      
-      await this.courseManager.addConversationEntry(session, 'assistant', evaluation.response);
+        // Update topic progress
+        await this.courseManager.updateConceptTopicProgress(session, concept.name, attempt);
+      }
 
       // Update unmastered topics list
       unmasteredTopics = this.courseManager.getUnmasteredTopics(

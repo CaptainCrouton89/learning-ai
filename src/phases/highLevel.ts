@@ -88,20 +88,13 @@ export class HighLevelPhase {
 
       await this.courseManager.addConversationEntry(session, 'user', answer);
 
-      // Get feedback and comprehension scores in parallel
-      const [response, comprehensionUpdates] = await Promise.all([
-        this.ai.generateHighLevelResponse(
-          answer,
-          course,
-          session.conversationHistory.slice(-10),
-          unmasteredTopics.length > 0 // Always include follow-up when topics remain unmastered
-        ),
-        this.ai.evaluateHighLevelComprehension(
-          answer,
-          course,
-          session.conversationHistory.slice(-10)
-        )
-      ]);
+      // Get feedback with comprehension scores in a single call
+      const { response, comprehensionUpdates } = await this.ai.generateHighLevelResponse(
+        answer,
+        course,
+        session.conversationHistory.slice(-10),
+        unmasteredTopics.length > 0 // Always include follow-up when topics remain unmastered
+      );
 
       // Display feedback first
       console.log(chalk.green(`\n${response}\n`));
@@ -207,7 +200,7 @@ export class HighLevelPhase {
 
       console.log(chalk.gray('\nLet me explain...\n'));
 
-      const response = await this.ai.generateHighLevelResponse(
+      const { response } = await this.ai.generateHighLevelResponse(
         question,
         course,
         session.conversationHistory.slice(-10),
