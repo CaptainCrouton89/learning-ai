@@ -9,7 +9,8 @@ export class GenerationService {
   async generateHighLevelQuestion(
     course: Course,
     conversationHistory: Array<{ role: string; content: string }>,
-    existingUnderstanding: string
+    existingUnderstanding: string,
+    isFirstQuestion: boolean = false
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
@@ -25,9 +26,12 @@ ${
 }
 </context>
 
-Ask a probing question about ${
-        course.name
-      } that explores foundational understanding.`,
+${
+  isFirstQuestion
+    ? `First, provide a brief 3-paragraph introduction to ${course.name} that gives essential context. Each paragraph should be 2-3 sentences max.
+Then ask a probing question about ${course.name} that explores foundational understanding.`
+    : `Ask a probing question about ${course.name} that explores foundational understanding.`
+}`,
     });
 
     return text;
@@ -36,7 +40,8 @@ Ask a probing question about ${
   async generateConceptQuestion(
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
-    existingUnderstanding: string
+    existingUnderstanding: string,
+    isFirstQuestion: boolean = false
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
@@ -56,9 +61,12 @@ ${
 }
 </context>
 
-Generate a focused question or teaching point that explores a specific aspect of ${
-        concept.name
-      }.`,
+${
+  isFirstQuestion
+    ? `First, provide a brief 3-paragraph introduction to ${concept.name} that gives essential context. Each paragraph should be 2-3 sentences max.
+Then generate a focused question or teaching point that explores a specific aspect of ${concept.name}.`
+    : `Generate a focused question or teaching point that explores a specific aspect of ${concept.name}.`
+}`,
     });
 
     return text;

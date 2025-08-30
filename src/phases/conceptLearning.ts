@@ -78,11 +78,12 @@ export class ConceptLearningPhase {
     // Show initial progress
     this.displayTopicProgress(session, concept);
 
-    // Generate the first question to start the conversation
+    // Generate the first question to start the conversation (with introduction)
     const firstQuestion = await this.ai.generateConceptQuestion(
       concept,
       session.conversationHistory.slice(-10),
-      session.existingUnderstanding || "Some - I know the basics"
+      session.existingUnderstanding || "Some - I know the basics",
+      true // isFirstQuestion flag for introduction
     );
     console.log(chalk.cyan(`\n${firstQuestion}\n`));
     await this.courseManager.addConversationEntry(

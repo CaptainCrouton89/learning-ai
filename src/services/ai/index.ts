@@ -61,12 +61,14 @@ export class AIService {
   async generateHighLevelQuestion(
     course: Course,
     conversationHistory: Array<{ role: string; content: string }>,
-    existingUnderstanding: string
+    existingUnderstanding: string,
+    isFirstQuestion: boolean = false
   ): Promise<string> {
     return this.generationService.generateHighLevelQuestion(
       course,
       conversationHistory,
-      existingUnderstanding
+      existingUnderstanding,
+      isFirstQuestion
     );
   }
 
@@ -92,12 +94,14 @@ export class AIService {
   async generateConceptQuestion(
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
-    existingUnderstanding: string
+    existingUnderstanding: string,
+    isFirstQuestion: boolean = false
   ): Promise<string> {
     return this.generationService.generateConceptQuestion(
       concept,
       conversationHistory,
-      existingUnderstanding
+      existingUnderstanding,
+      isFirstQuestion
     );
   }
 

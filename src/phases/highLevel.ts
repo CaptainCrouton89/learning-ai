@@ -33,11 +33,12 @@ export class HighLevelPhase {
     // Show initial progress
     this.displayHighLevelProgress(session, highLevelTopics);
 
-    // Generate the first question to start the conversation
+    // Generate the first question to start the conversation (with introduction)
     const firstQuestion = await this.ai.generateHighLevelQuestion(
       course,
       session.conversationHistory.slice(-10),
-      session.existingUnderstanding || "Some - I know the basics"
+      session.existingUnderstanding || "Some - I know the basics",
+      true // isFirstQuestion flag for introduction
     );
     console.log(chalk.cyan(`\n${firstQuestion}\n`));
     await this.courseManager.addConversationEntry(
