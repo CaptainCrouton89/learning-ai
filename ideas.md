@@ -25,3 +25,5 @@ Learning like a web
 Econ was hard: Just no understanding. No contextual understanding. High level analogies, keep building.
 
 Look up anki
+
+Test mode: Give much longer answers. It should tell you what stuff to touch on.

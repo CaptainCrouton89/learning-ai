@@ -71,8 +71,8 @@ export class MemorizationPhase {
 
     const conceptProgress = session.conceptsProgress.get(concept.name);
     const previousAttempts = conceptProgress?.itemsProgress.get(item)?.attempts.map(a => ({
-      question: a.question,
-      answer: a.userAnswer
+      userAnswer: a.userAnswer,
+      aiResponse: a.aiResponse.response
     })) || [];
 
     const evaluation = await this.ai.evaluateFlashcardAnswer(

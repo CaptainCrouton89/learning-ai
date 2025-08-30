@@ -9,8 +9,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run dev` - Run in development mode with auto-reload (watches src/index.ts)
 - `npm run build` - Build TypeScript to dist/
 - `npm run typecheck` - Type check without emitting files
+- `npm install` - Install dependencies
 
 ### Running the CLI
+
+After building with `npm run build`, use these commands:
 
 - `npm start -- start` - Start a new learning session (interactive)
 - `npm start -- start --topic "wine"` - Start learning from GPT knowledge base
@@ -19,10 +22,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm start -- resume --course "wine"` - Resume specific course
 - `npm start -- list` - List all available courses
 
+Alternatively, after global install: `learn start`, `learn resume`, `learn list`
+
 ### Environment Setup
 
-- Copy `.env.example` to `.env` and add OpenAI API key
+- Copy `.env.example` to `.env` and add OpenAI API key: `OPENAI_API_KEY=your_key_here`
 - The project uses ESM modules (`"type": "module"` in package.json)
+- TypeScript builds to `dist/` directory
+- CLI binary entry point: `dist/index.js`
 
 ## Architecture
 
@@ -38,21 +45,24 @@ The application implements a structured 5-phase learning system as defined in `l
 
 ### Core Services
 
-**AIService** (`src/services/ai.ts`)
+**AIService** (`src/services/ai/index.ts`)
 
-- Uses Vercel AI SDK with OpenAI GPT-4.1 model
+- Facade for CourseService, GenerationService, and EvaluationService
+- Uses Vercel AI SDK with OpenAI GPT models
 - `generateObject()` for structured responses (course generation, flashcard evaluation)
 - `generateText()` for conversational responses (Q&A, feedback)
 - Flashcard evaluation returns comprehension score (0-5, where 4+ = success)
 - Items need 2 successful attempts to be mastered
+- High-level and concept comprehension tracking with topic-based scoring
 
 **CourseManager** (`src/services/courseManager.ts`)
 
-- Persists courses to `courses/` directory
-- Persists sessions to `sessions/` directory
-- Tracks progress per concept and item
-- Sessions store conversation history and current phase
-- Handles serialization of Map structures for persistence
+- Persists courses to `courses/` directory as JSON files
+- Persists sessions to `sessions/` directory with format `{courseId}-session.json`
+- Tracks progress per concept and item with success counts
+- Sessions store conversation history, current phase, and timing
+- Handles serialization/deserialization of Map structures for persistence
+- Manages abstract questions tracking to avoid repetition
 
 ### Phase Implementation Pattern
 
@@ -75,9 +85,42 @@ Each phase class (`src/phases/`) follows this pattern:
 
 ### Key Implementation Details
 
-- Flashcard randomization happens on each iteration
-- Abstract questions track previously asked to avoid repetition
-- Comprehension scoring: 4+ adds to success count, 2 successes = mastery
-- Editor prompts used for longer responses
-- Progress indicators show remaining items to master
-- Session timing tracked for statistics
+- **Flashcard System**: Random order on each iteration, 2 successes needed for mastery
+- **Abstract Questions**: Mixed in every 10 flashcard questions, tracks previously asked
+- **Comprehension Scoring**: 0-5 scale, 4+ counts as success, topic-based tracking
+- **Progress Tracking**: Items, topics, and concept-level progress with timestamps
+- **Session Management**: Conversation history, phase state, resume capability
+- **Error Handling**: Early error throwing, no fallbacks (pre-production mode)
+
+### Directory Structure
+
+```
+src/
+├── commands/           # CLI command handlers (start.ts, resume.ts, list.ts)
+├── phases/            # Learning phase implementations
+│   ├── initialization.ts    # Course creation and user preference collection
+│   ├── highLevel.ts        # Foundational Q&A phase
+│   ├── conceptLearning.ts  # Deep dive into specific topics
+│   ├── memorization.ts     # Flashcard practice with spaced repetition
+│   └── drawingConnections.ts # Scenario-based synthesis questions
+├── services/          # Core business logic
+│   ├── ai/           # AI service modules
+│   │   ├── index.ts         # Main AIService facade
+│   │   ├── courseService.ts # Course structure generation
+│   │   ├── generationService.ts # Question generation
+│   │   ├── evaluationService.ts # Answer evaluation and scoring
+│   │   ├── schemas.ts       # Zod validation schemas
+│   │   └── prompts.ts       # AI prompt templates
+│   └── courseManager.ts     # Data persistence and session management
+├── types/            # TypeScript type definitions
+│   └── course.ts           # Core data structures
+├── utils/            # Utility functions
+│   └── progressBar.ts      # CLI progress indicators
+└── index.ts          # CLI entry point with Commander.js
+```
+
+### Data Persistence
+
+- **Courses**: `courses/{courseName}.json` - Course structure with concepts and items
+- **Sessions**: `sessions/{courseId}-session.json` - Learning progress and history
+- **Map Serialization**: Complex nested Maps converted to arrays for JSON storage

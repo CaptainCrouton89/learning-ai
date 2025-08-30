@@ -96,7 +96,7 @@ export class HighLevelPhase {
           highLevelTopics
         );
 
-        // Generate next question if topics remain
+        // Generate a new question after skip since there's no follow-up in the response
         if (unmasteredTopics.length > 0) {
           const nextQuestion = await this.ai.generateHighLevelQuestion(
             course,
@@ -115,13 +115,23 @@ export class HighLevelPhase {
 
       await this.courseManager.addConversationEntry(session, "user", answer);
 
+
+      // Get current comprehension progress for all topics
+      const comprehensionProgress = this.courseManager.getAllTopicsComprehension(
+        session,
+        "high-level",
+        highLevelTopics
+      );
+
       // Get feedback with comprehension scores in a single call
       const { response, comprehensionUpdates } =
         await this.ai.generateHighLevelResponse(
           answer,
           course,
-          session.conversationHistory.slice(-10)
+          session.conversationHistory.slice(-10),
+          comprehensionProgress
         );
+
 
       // Display feedback first
       console.log(chalk.green(`\n${response}\n`));
@@ -167,6 +177,8 @@ export class HighLevelPhase {
         "high-level",
         highLevelTopics
       );
+
+      // The response already includes a follow-up question, so no need to generate another one
 
       questionCount++;
 
@@ -268,10 +280,19 @@ export class HighLevelPhase {
 
       console.log(chalk.gray("\nLet me explain...\n"));
 
+      // Get current comprehension progress for context
+      const highLevelTopics = course.concepts.map((c) => c.name);
+      const comprehensionProgress = this.courseManager.getAllTopicsComprehension(
+        session,
+        "high-level",
+        highLevelTopics
+      );
+
       const { response } = await this.ai.generateHighLevelResponse(
         question,
         course,
-        session.conversationHistory.slice(-10)
+        session.conversationHistory.slice(-10),
+        comprehensionProgress
       );
 
       console.log(chalk.green(response));

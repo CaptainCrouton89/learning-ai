@@ -37,7 +37,8 @@ export class AIService {
   async generateHighLevelResponse(
     userAnswer: string,
     course: Course,
-    conversationHistory: Array<{ role: string; content: string }>
+    conversationHistory: Array<{ role: string; content: string }>,
+    comprehensionProgress?: Map<string, number>
   ): Promise<{
     response: string;
     comprehensionUpdates: Array<{ topic: string; comprehension: number }>;
@@ -45,33 +46,11 @@ export class AIService {
     return this.evaluationService.generateHighLevelResponse(
       userAnswer,
       course,
-      conversationHistory
+      conversationHistory,
+      comprehensionProgress
     );
   }
 
-  async evaluateHighLevelComprehension(
-    userAnswer: string,
-    course: Course,
-    conversationHistory: Array<{ role: string; content: string }>
-  ): Promise<Array<{ topic: string; comprehension: number }>> {
-    return this.evaluationService.evaluateHighLevelComprehension(
-      userAnswer,
-      course,
-      conversationHistory
-    );
-  }
-
-  async evaluateHighLevelAnswer(
-    userAnswer: string,
-    course: Course,
-    conversationHistory: Array<{ role: string; content: string }>
-  ): Promise<{ comprehension: number; response: string; targetTopic: string }> {
-    return this.evaluationService.evaluateHighLevelAnswer(
-      userAnswer,
-      course,
-      conversationHistory
-    );
-  }
 
   async generateConceptQuestion(
     concept: Concept,
@@ -132,7 +111,7 @@ export class AIService {
     userAnswer: string,
     concept: Concept,
     otherConcepts: string[],
-    previousAttempts: Array<{ question: string; answer: string }>
+    previousAttempts: Array<{ userAnswer: string; aiResponse: string }>
   ): Promise<{ comprehension: number; response: string }> {
     return this.evaluationService.evaluateFlashcardAnswer(
       item,

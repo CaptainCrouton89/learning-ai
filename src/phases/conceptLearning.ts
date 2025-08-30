@@ -165,15 +165,7 @@ export class ConceptLearningPhase {
         concept['high-level']
       );
 
-      // Generate next question if topics remain
-      if (unmasteredTopics.length > 0) {
-        const nextQuestion = await this.ai.generateConceptQuestion(
-          concept,
-          session.conversationHistory.slice(-10)
-        );
-        console.log(chalk.cyan(`\n${nextQuestion}\n`));
-        await this.courseManager.addConversationEntry(session, 'assistant', nextQuestion);
-      }
+      // The response already includes a follow-up question, so no need to generate another one
 
       questionCount++;
 
