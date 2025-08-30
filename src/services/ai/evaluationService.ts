@@ -310,23 +310,33 @@ Provide substantive feedback that advances their understanding, then ask a speci
       
       Score comprehension 0-5 (4+ counts as success).
       
-      RESPONSE GUIDELINES:
-      • Use bullet points for clarity and organization
-      • Keep responses concise but insightful
-      • Focus on corrections and connections, not just listing definitions
-      • Draw meaningful connections to other concepts: ${otherConcepts.join(", ")}
-      • Explain WHY things matter, not just WHAT they are
+      CRITICAL FORMATTING REQUIREMENTS:
+      YOU MUST use this exact structure with proper spacing between sections:
       
       For CORRECT answers (score 4+):
-      • Briefly acknowledge success
-      • Add ONE interesting insight or connection they didn't mention
-      • Keep it to 1-2 sentences
+      ✓ Correct.
+      
+      **Additional insight:** {One specific fact or connection they didn't mention}
       
       For INCORRECT/PARTIAL answers (score 0-3):
-      • Focus on what they missed or misunderstood
-      • Provide corrections with context
-      • Make connections that deepen understanding
-      • Don't just list the fields - explain their significance`,
+      ❌ Incorrect/Incomplete.
+      
+      **The correct answer requires:**
+      • **${fields[0]}**: {Precise facts/values for this field}
+      • **${fields[1]}**: {Precise facts/values for this field}
+      {Continue for ALL fields, even if user got some right}
+      
+      **Why this matters:** {1-2 sentences on practical importance}
+      
+      **Remember this connection:** {Specific link to ${otherConcepts[0] || 'another concept'} with concrete example}
+      
+      STRICT RULES:
+      - Be DIRECT - start with "Incorrect" or "Correct", not what they said
+      - List the ACTUAL FACTS for each field, not vague descriptions
+      - Use specific numbers, names, examples - not generalizations
+      - Maximum 1 line per field - just the essential facts
+      - Don't soften feedback - be precise about what's wrong
+      - Focus on memorizable facts, not explanations`,
       prompt: `Item: ${item}
       Required fields: ${fields.join(", ")}
       Current user answer: ${userAnswer}
@@ -353,12 +363,25 @@ Provide substantive feedback that advances their understanding, then ask a speci
     const { text } = await generateText({
       model: this.model,
       system: `Evaluate the user's answer to an abstract question about ${concept.name}.
-      Draw connections to other concepts and provide insightful feedback.`,
+      Be DIRECT about correctness.
+      Focus on concrete connections between concepts.
+      
+      STRUCTURE:
+      ✓ or ❌ assessment
+      Bullet points of correct understanding
+      Specific connections to other concepts`,
       prompt: `Question: ${question}
       User answer: ${userAnswer}
-      Provide feedback that draws connections between concepts: ${allConcepts
-        .map((c) => c.name)
-        .join(", ")}`,
+      Concepts to connect: ${allConcepts.map((c) => c.name).join(", ")}
+      
+      Format:
+      **✓ Correct:** or **❌ Incorrect/Incomplete:**
+      
+      **Key points:**
+      • {Specific fact or relationship}
+      • {Another specific fact}
+      
+      **Connection:** {How this relates to another concept with specific example}`,
     });
 
     return text;
@@ -372,10 +395,22 @@ Provide substantive feedback that advances their understanding, then ask a speci
     const { text } = await generateText({
       model: this.model,
       system: `Evaluate the user's synthesis of concepts in ${course.name}.
-      Provide detailed feedback and optionally generate a challenging follow-up.`,
+      Be DIRECT and specific about their understanding.
+      Provide concrete feedback with facts.
+      
+      STRUCTURE:
+      1. ✓ Correct or ❌ Incorrect/Incomplete assessment
+      2. Bullet points of what they should understand
+      3. Key insight or principle
+      4. Optional follow-up if answer was particularly weak`,
       prompt: `Question: ${question}
       User answer: ${userAnswer}
-      Provide feedback and decide if a follow-up question would be valuable.`,
+      
+      Provide direct feedback:
+      - Start with ✓ or ❌
+      - List specific facts they missed
+      - End with key principle
+      - Only add follow-up if score < 3`,
     });
 
     const lines = text.split("\n");
@@ -402,18 +437,22 @@ Provide substantive feedback that advances their understanding, then ask a speci
     const { text } = await generateText({
       model: this.model,
       system: `Evaluate the user's understanding of the "why" or "what causes" behind ${item} in ${concept.name}.
-      Focus on whether they understand the underlying reasons and mechanisms.
-      Provide constructive feedback that deepens their understanding.
-      NO follow-up questions - just provide feedback and clarification.`,
+      Be DIRECT about what's wrong and what's right.
+      NO follow-up questions - just provide feedback.
+      
+      STRUCTURE:
+      Start with ✓ Correct or ❌ Incorrect/Incomplete
+      Then provide the actual facts in bullet points
+      End with one key principle to remember`,
       prompt: `Elaboration question: ${question}
       About item: ${item}
       User answer: ${userAnswer}
       
-      Provide feedback that:
-      - Acknowledges what they got right
-      - Corrects any misunderstandings
-      - Explains the actual reasons/causes if they missed them
-      - Keeps focus on the "why" behind the facts`,
+      Provide feedback following this structure:
+      - ✓ or ❌ with brief assessment
+      - Bullet points with the correct facts about causes/mechanisms
+      - One memorable principle or pattern
+      - NO softening, be direct about errors`,
     });
 
     return text;
@@ -428,19 +467,27 @@ Provide substantive feedback that advances their understanding, then ask a speci
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `Evaluate how well the user connected ${performingItem} (which they know well) to ${strugglingItem} (which they struggle with) in ${concept.name}.
-      Focus on whether they made meaningful connections and comparisons.
-      Help reinforce their understanding of the struggling item through the connection.
-      NO follow-up questions - just provide feedback.`,
+      system: `Evaluate how well the user connected ${performingItem} to ${strugglingItem} in ${concept.name}.
+      Be DIRECT and precise about connections.
+      NO follow-up questions.
+      
+      STRUCTURE:
+      ✓ or ❌ assessment
+      Bullet points of correct connections
+      One key distinction to remember`,
       prompt: `Connection question: ${question}
       Linking: ${performingItem} (known) to ${strugglingItem} (struggling)
       User answer: ${userAnswer}
       
-      Provide feedback that:
-      - Validates correct connections they made
-      - Highlights key similarities/differences they may have missed
-      - Reinforces understanding of ${strugglingItem} through its relationship to ${performingItem}
-      - Clarifies any misconceptions`,
+      Format:
+      **✓ Correct connections:** or **❌ Missing connections:**
+      
+      **The actual connections:**
+      • Similarity: {specific shared attribute with values}
+      • Difference: {specific contrasting attribute with values}
+      • Pattern: {underlying principle that links them}
+      
+      **Remember:** {Key distinction between the two items}`,
     });
 
     return text;
@@ -454,21 +501,29 @@ Provide substantive feedback that advances their understanding, then ask a speci
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `Evaluate the user's high-level synthesis and recall for ${concept.name}.
-      They should demonstrate understanding across multiple items and see patterns.
-      Provide feedback that reinforces connections and patterns.
-      NO follow-up questions - just provide comprehensive feedback.`,
+      system: `Evaluate the user's high-level synthesis for ${concept.name}.
+      Be DIRECT about gaps and errors.
+      Focus on patterns and relationships.
+      NO follow-up questions.
+      
+      STRUCTURE:
+      ✓ or ❌ with main assessment
+      Bullet points of key patterns/facts
+      One overarching principle`,
       prompt: `High-level question: ${question}
       Items covered: ${itemsCovered.join(", ")}
       Topics: ${concept["high-level"].join(", ")}
       User answer: ${userAnswer}
       
-      Provide feedback that:
-      - Acknowledges the connections and patterns they identified
-      - Points out any important patterns or relationships they missed
-      - Reinforces the big picture understanding
-      - Corrects any conceptual errors
-      - Draws together the various items into a cohesive understanding`,
+      Format:
+      **✓ Correct synthesis:** or **❌ Incomplete synthesis:**
+      
+      **Key patterns across all items:**
+      • Pattern 1: {specific relationship with examples}
+      • Pattern 2: {specific trend with values}
+      • Pattern 3: {specific distinction or grouping}
+      
+      **Overarching principle:** {The main takeaway that unifies everything}`,
     });
 
     return text;

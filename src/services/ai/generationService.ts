@@ -68,13 +68,47 @@ Generate a focused question or teaching point that explores a specific aspect of
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `Generate abstract/connection questions about ${concept.name}.
-      These should probe deeper understanding and connections between concepts.
-      Avoid repeating previous questions.`,
-      prompt: `Concept: ${concept.name}
-      All concepts in course: ${allConcepts.map((c) => c.name).join(", ")}
-      Previous questions asked: ${previousQuestions.join(", ")}
-      Generate a new abstract question that explores connections or trends.`,
+      system: `<role>
+You are an expert educator creating thought-provoking synthesis questions about ${concept.name}.
+</role>
+
+<objective>
+Generate questions that test deep understanding through analysis, not just recall.
+</objective>
+
+<question-design-principles>
+1. **Force Critical Analysis**: Ask "why" and "how" rather than "what"
+2. **Require Prioritization**: "Which factor is MOST important..." 
+3. **Include Constraints**: "Given only X, how would you..."
+4. **Explore Edge Cases**: "Why might this pattern fail when..."
+5. **Demand Specific Examples**: "Provide two contrasting cases where..."
+6. **Challenge Assumptions**: "Why might X seem true but actually be misleading?"
+</question-design-principles>
+
+<avoid>
+- Self-evident answers ("how does understanding X help you understand X?")
+- Overly broad scope ("explain everything about...")
+- Pure description without analysis
+- Questions where the answer is contained in the question
+</avoid>`,
+      prompt: `<context>
+Concept: ${concept.name}
+Related concepts: ${allConcepts.map((c) => c.name).join(", ")}
+Previous questions to avoid: ${previousQuestions.join("; ")}
+</context>
+
+<task>
+Generate ONE precise question that:
+1. Tests synthesis across multiple aspects of ${concept.name}
+2. Requires the learner to analyze trade-offs or competing factors
+3. Cannot be answered with simple recall or description
+4. Has a non-obvious answer that requires genuine thinking
+
+Focus on questions like:
+- "Why does X typically lead to Y, and in what specific situations might this relationship reverse?"
+- "If you had to choose between optimizing for A or B, which would have greater impact on C and why?"
+- "What's the most common misconception about X, and why does it persist despite evidence?"
+</task>`,
     });
 
     return text;
@@ -87,12 +121,49 @@ Generate a focused question or teaching point that explores a specific aspect of
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `Generate open-ended questions that tie together all concepts in ${course.name}.
-      Focus on practical applications and deeper understanding.
-      Questions should be longer-form and scenario-based.`,
-      prompt: `Drawing connections: ${connections.join(", ")}
-      Previous Q&A: ${JSON.stringify(previousQuestions)}
-      Generate a scenario-based question that requires synthesizing multiple concepts.`,
+      system: `<role>
+You are an expert educator creating scenario-based synthesis questions for ${course.name}.
+</role>
+
+<objective>
+Create challenging scenarios that require integrating knowledge from multiple concepts to solve real problems.
+</objective>
+
+<scenario-design-principles>
+1. **Start with a Specific Situation**: "You're faced with..." or "A client presents with..."
+2. **Include Constraints or Complications**: Limited resources, competing priorities, unusual conditions
+3. **Require Decision-Making**: "What would you prioritize and why?"
+4. **Demand Trade-off Analysis**: "What would you sacrifice to achieve X?"
+5. **Test Edge Cases**: Situations where normal rules might not apply
+6. **Force Ranking or Comparison**: "Which approach would be most effective?"
+</scenario-design-principles>
+
+<avoid>
+- Generic "explain how X relates to Y" questions
+- Scenarios with obvious solutions
+- Questions that can be answered by listing facts
+- Hypotheticals without specific constraints
+</avoid>`,
+      prompt: `<context>
+Key topics to connect: ${connections.join(", ")}
+Previous scenarios covered: ${previousQuestions.map(q => q.question).slice(0, 3).join("; ")}
+</context>
+
+<task>
+Create a SPECIFIC scenario that:
+1. Presents a realistic problem or decision point
+2. Requires synthesizing at least 2-3 of the connection topics
+3. Has multiple valid approaches with different trade-offs
+4. Cannot be solved with textbook knowledge alone
+
+Structure:
+1. Set up a concrete scenario (2-3 sentences)
+2. Present a specific challenge or decision
+3. Ask for analysis with constraints (e.g., "Given limited time, which TWO factors would you prioritize?")
+
+Example format:
+"You're evaluating two wines for a restaurant's house selection. Wine A has high acidity and moderate tannins, while Wine B has low acidity but bold tannins. Your menu is seafood-focused but you need versatility. Which wine would you choose and why? Consider food pairing principles, customer preferences, and aging potential in your analysis."
+</task>`,
     });
 
     return text;
@@ -148,23 +219,65 @@ Generate a focused question or teaching point that explores a specific aspect of
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `Generate a high-level synthesis question about ${concept.name}.
-      This should require recall and explanation of multiple items covered.
-      Focus on overall understanding and ability to synthesize information.`,
-      prompt: `Concept: ${concept.name}
-      Items covered so far: ${itemsCovered.join(", ")}
-      Topics: ${concept["high-level"].join(", ")}
-      
-      Generate a question that:
-      - Requires synthesis of multiple items
-      - Tests overall understanding of the concept
-      - Encourages explanation and recall
-      - Is open-ended but focused
-      
-      Examples:
-      - "Explain the key characteristics that define..."
-      - "How do the various types of X relate to each other?"
-      - "What patterns do you see across all the X we've covered?"`,
+      system: `<role>
+You are an expert educator testing synthesis and critical thinking about ${concept.name}.
+</role>
+
+<objective>
+Create questions that test deep understanding through analysis and prioritization, not just recall.
+</objective>
+
+<question-design-framework>
+1. **Comparative Analysis**: "Among X, Y, and Z, which most influences..."
+2. **Causal Reasoning**: "Why does X lead to Y in most cases but not when Z is present?"
+3. **Pattern Recognition**: "What unexpected similarity exists between..."
+4. **Prioritization Under Constraints**: "If you could only control one factor..."
+5. **Counter-intuitive Insights**: "Why might the obvious approach fail when..."
+6. **Trade-off Analysis**: "When optimizing for X, what must you sacrifice in Y?"
+</question-design-framework>
+
+<critical-requirements>
+- Questions must have NON-OBVIOUS answers requiring genuine analysis
+- Avoid questions where the answer is self-evident or tautological
+- Focus on "why" and "which" rather than "what" or "list"
+- Include specific constraints or conditions
+- Require choosing/ranking rather than just explaining
+</critical-requirements>
+
+<bad-question-patterns-to-avoid>
+- "Explain how understanding X helps you understand X" (tautological)
+- "Describe all the factors that influence..." (too broad, no analysis)
+- "How do A, B, and C work together?" (vague, descriptive)
+- "What have you learned about..." (pure recall)
+</bad-question-patterns-to-avoid>`,
+      prompt: `<context>
+Concept: ${concept.name}
+Items studied: ${itemsCovered.slice(-10).join(", ")}
+Key topics: ${concept["high-level"].slice(0, 5).join(", ")}
+</context>
+
+<task>
+Generate ONE precise analytical question that:
+
+1. References 2-3 specific items from those studied
+2. Requires comparing, prioritizing, or identifying causal relationships
+3. Has a non-obvious answer that requires reasoning
+4. Cannot be answered with simple recall or listing
+
+<good-examples>
+- "Between ${itemsCovered[0] || 'factor A'} and ${itemsCovered[1] || 'factor B'}, which has a greater impact on [specific outcome], and why might this hierarchy reverse under [specific condition]?"
+- "You've learned about [X, Y, Z]. If you had to sacrifice one to maximize [outcome], which would it be and what specific trade-offs would this create?"
+- "Why does [pattern] hold true for [items A and B] but break down for [item C]? What underlying principle explains this exception?"
+</good-examples>
+
+<bad-examples>
+- "Explain how [listing items] contribute to [obvious outcome]"
+- "Describe the relationship between [X] and [Y]"
+- "How does understanding [X] help you evaluate [X]?"
+</bad-examples>
+
+Create a question following the good examples pattern, using the actual items and topics from this concept.
+</task>`,
     });
 
     return text;
