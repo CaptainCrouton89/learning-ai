@@ -10,7 +10,7 @@ export class InitializationPhase {
   private ai = new AIService();
   private courseManager = new CourseManager();
 
-  async start(options: { file?: string; topic?: string }): Promise<Course> {
+  async start(options: { file?: string; topic?: string }): Promise<{ course: Course; existingUnderstanding: string; timeAvailable: string }> {
     console.log(chalk.blue("\n📚 Welcome to AI Learning Tool!\n"));
 
     let documentContent: string | null = null;
@@ -55,39 +55,117 @@ export class InitializationPhase {
         name: "timeAvailable",
         message: "How much time do you have for learning?",
         choices: [
-          { name: "Quick overview - 15 minutes", value: "15min" },
-          { name: "Standard session - 30 minutes", value: "30min" },
-          { name: "Deep dive - 1 hour", value: "1hour" },
-          { name: "Comprehensive - As long as it takes", value: "2hours+" },
+          { name: "Micro-learning - Under 15 minutes", value: "<15min" },
+          { name: "Quick session - 15-60 minutes", value: "15-60min" },
+          { name: "Standard learning - 1-6 hours", value: "1-6hours" },
+          { name: "Deep dive - 6-12 hours", value: "6-12hours" },
+          { name: "Comprehensive mastery - 12+ hours", value: "12hours+" },
         ],
       },
     ]);
 
-    const { depth } = await inquirer.prompt([
+    const { existingUnderstanding } = await inquirer.prompt([
       {
         type: "list",
-        name: "depth",
-        message: "How in-depth would you like to go?",
+        name: "existingUnderstanding",
+        message: "What's your current understanding of this topic?",
         choices: [
-          { name: "Beginner - Start with basics", value: "beginner" },
+          { name: "None - Complete beginner", value: "None - Complete beginner" },
           {
-            name: "Intermediate - Some prior knowledge",
-            value: "intermediate",
+            name: "Some - I know the basics",
+            value: "Some - I know the basics",
           },
-          { name: "Advanced - Deep technical details", value: "advanced" },
+          { name: "Strong - I want advanced insights", value: "Strong - I want advanced insights" },
         ],
       },
     ]);
 
+    // Topic refinement for better scoping, especially for short sessions
+    if (timeAvailable === "<15min" || timeAvailable === "15-60min") {
+      const topicAnalysis = await this.ai.analyzeTopic(
+        topic,
+        timeAvailable,
+        existingUnderstanding
+      );
+
+      if (!topicAnalysis.is_appropriate) {
+        console.log(chalk.yellow(`\n⚠️  ${topicAnalysis.reason}\n`));
+        
+        if (topicAnalysis.suggested_refinements.length > 0) {
+          console.log(chalk.cyan("Here are some more focused options:"));
+          topicAnalysis.suggested_refinements.forEach((refinement, index) => {
+            console.log(chalk.gray(`  ${index + 1}. ${refinement}`));
+          });
+        }
+
+        if (topicAnalysis.clarifying_questions.length > 0) {
+          const { refinementChoice } = await inquirer.prompt([
+            {
+              type: "list",
+              name: "refinementChoice",
+              message: topicAnalysis.clarifying_questions[0],
+              choices: [
+                ...topicAnalysis.suggested_refinements.map((r) => ({
+                  name: r,
+                  value: r,
+                })),
+                { name: "Keep my original topic", value: topic },
+                { name: "Let me specify differently", value: "custom" },
+              ],
+            },
+          ]);
+
+          if (refinementChoice === "custom") {
+            const { customRefinement } = await inquirer.prompt([
+              {
+                type: "input",
+                name: "customRefinement",
+                message: "Please specify your refined topic:",
+                validate: (input) =>
+                  input.length > 0 || "Please enter a topic",
+              },
+            ]);
+            topic = await this.ai.refineTopic(
+              topic,
+              customRefinement,
+              timeAvailable
+            );
+          } else if (refinementChoice !== topic) {
+            topic = refinementChoice;
+          }
+        }
+      }
+    }
+
     console.log(chalk.cyan("\n📝 Tell me what you want to focus on"));
-    console.log(
-      chalk.gray(
-        'For example: "I want to understand the basics and practical applications"'
-      )
-    );
-    console.log(
-      chalk.gray('or: "Help me master advanced techniques and edge cases"')
-    );
+    if (timeAvailable === "<15min") {
+      console.log(
+        chalk.gray(
+          'For a micro-session, be very specific: "I want to understand just the factory pattern"'
+        )
+      );
+      console.log(
+        chalk.gray('or: "Help me understand wine acidity basics"')
+      );
+    } else if (timeAvailable === "15-60min") {
+      console.log(
+        chalk.gray(
+          'For a quick session, focus on core concepts: "I want to understand the main creational patterns"'
+        )
+      );
+      console.log(
+        chalk.gray('or: "Help me learn wine structure and food pairing basics"')
+      );
+    } else {
+      console.log(
+        chalk.gray(
+          'For example: "I want to understand the basics and practical applications"'
+        )
+      );
+      console.log(
+        chalk.gray('or: "Help me master advanced techniques and edge cases"')
+      );
+    }
     console.log(
       chalk.gray('or: "I need to learn how to troubleshoot common problems"\n')
     );
@@ -109,7 +187,7 @@ export class InitializationPhase {
         topic,
         documentContent,
         timeAvailable,
-        depth,
+        existingUnderstanding,
         focusDescription
       );
 
@@ -126,7 +204,7 @@ export class InitializationPhase {
         console.log(chalk.gray(`  - ${c.name}`));
       });
 
-      return course;
+      return { course, existingUnderstanding, timeAvailable };
     } catch (error) {
       spinner.fail("Failed to create course");
       throw error;

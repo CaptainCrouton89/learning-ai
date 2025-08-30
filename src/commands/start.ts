@@ -10,10 +10,12 @@ export async function startLearningSession(options: { file?: string; topic?: str
     console.log(chalk.bold.blue('\n🚀 Starting new learning session...\n'));
 
     const initPhase = new InitializationPhase();
-    const course = await initPhase.start(options);
+    const { course, existingUnderstanding, timeAvailable } = await initPhase.start(options);
 
     const courseManager = new CourseManager();
     const session = await courseManager.createSession(course.name);
+    session.existingUnderstanding = existingUnderstanding;
+    session.timeAvailable = timeAvailable;
 
     const highLevelPhase = new HighLevelPhase();
     await highLevelPhase.start(course, session);

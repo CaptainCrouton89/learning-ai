@@ -23,7 +23,8 @@ export class DrawingConnectionsPhase {
       const question = await this.ai.generateConnectionQuestion(
         connections,
         course,
-        this.questionsAsked
+        this.questionsAsked,
+        session.existingUnderstanding || 'Some - I know the basics'
       );
 
       console.log(chalk.magenta(`\n${question}\n`));
@@ -40,7 +41,8 @@ export class DrawingConnectionsPhase {
       const evaluation = await this.ai.evaluateConnectionAnswer(
         question,
         answer,
-        course
+        course,
+        session.existingUnderstanding || 'Some - I know the basics'
       );
 
       console.log(chalk.green(`\n${evaluation.response}\n`));
@@ -64,7 +66,8 @@ export class DrawingConnectionsPhase {
         const followUpFeedback = await this.ai.evaluateConnectionAnswer(
           evaluation.followUp,
           followUpAnswer,
-          course
+          course,
+          session.existingUnderstanding || 'Some - I know the basics'
         );
 
         console.log(chalk.green(`\n${followUpFeedback.response}\n`));

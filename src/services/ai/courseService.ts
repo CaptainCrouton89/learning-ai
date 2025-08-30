@@ -1,17 +1,66 @@
 import { openai } from "@ai-sdk/openai";
-import { generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import { Course } from "../../types/course.js";
 import { ConceptDetailSchema, CourseGenerationSchema } from "./schemas.js";
-import { conceptDetailPrompts, coursePrompts } from "./prompts.js";
+import { conceptDetailPrompts, coursePrompts, topicRefinementPrompts } from "./prompts.js";
+import { z } from "zod";
 
 export class CourseService {
   private smartModel = openai("gpt-4.1");
+  private fastModel = openai("gpt-4.1-mini");
+
+  async analyzeTopic(
+    topic: string,
+    timeAvailable: string,
+    existingUnderstanding: string
+  ): Promise<{
+    is_appropriate: boolean;
+    reason: string;
+    suggested_refinements: string[];
+    clarifying_questions: string[];
+  }> {
+    const { object } = await generateObject({
+      model: this.fastModel,
+      schema: z.object({
+        is_appropriate: z.boolean(),
+        reason: z.string(),
+        suggested_refinements: z.array(z.string()),
+        clarifying_questions: z.array(z.string()),
+      }),
+      system: topicRefinementPrompts.system,
+      prompt: topicRefinementPrompts.analyzeTopicPrompt(
+        topic,
+        timeAvailable,
+        existingUnderstanding
+      ),
+    });
+
+    return object;
+  }
+
+  async refineTopic(
+    originalTopic: string,
+    userResponse: string,
+    timeAvailable: string
+  ): Promise<string> {
+    const { text } = await generateText({
+      model: this.fastModel,
+      system: topicRefinementPrompts.system,
+      prompt: topicRefinementPrompts.generateFollowUpPrompt(
+        originalTopic,
+        userResponse,
+        timeAvailable
+      ),
+    });
+
+    return text;
+  }
 
   async generateCourseStructure(
     topic: string,
     documentContent: string | null,
     timeAvailable: string,
-    depth: string,
+    existingUnderstanding: string,
     learningGoals: string
   ): Promise<Course> {
     console.log("Generating course structure...");
@@ -24,7 +73,7 @@ export class CourseService {
         topic,
         documentContent,
         timeAvailable,
-        depth,
+        existingUnderstanding,
         learningGoals
       ),
     });
@@ -42,7 +91,7 @@ export class CourseService {
               .map((c) => c.name)
               .filter((n) => n !== concept.name),
             timeAvailable,
-            depth
+            existingUnderstanding
           ),
         });
         return {

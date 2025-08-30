@@ -89,4 +89,6 @@ export interface LearningSession {
   }>;
   startTime: Date;
   lastActivityTime: Date;
+  existingUnderstanding: string;
+  timeAvailable: string;
 }

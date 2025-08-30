@@ -36,7 +36,8 @@ export class HighLevelPhase {
     // Generate the first question to start the conversation
     const firstQuestion = await this.ai.generateHighLevelQuestion(
       course,
-      session.conversationHistory.slice(-10)
+      session.conversationHistory.slice(-10),
+      session.existingUnderstanding || "Some - I know the basics"
     );
     console.log(chalk.cyan(`\n${firstQuestion}\n`));
     await this.courseManager.addConversationEntry(
@@ -100,7 +101,8 @@ export class HighLevelPhase {
         if (unmasteredTopics.length > 0) {
           const nextQuestion = await this.ai.generateHighLevelQuestion(
             course,
-            session.conversationHistory.slice(-10)
+            session.conversationHistory.slice(-10),
+            session.existingUnderstanding
           );
           console.log(chalk.cyan(`\n${nextQuestion}\n`));
           await this.courseManager.addConversationEntry(
@@ -115,13 +117,13 @@ export class HighLevelPhase {
 
       await this.courseManager.addConversationEntry(session, "user", answer);
 
-
       // Get current comprehension progress for all topics
-      const comprehensionProgress = this.courseManager.getAllTopicsComprehension(
-        session,
-        "high-level",
-        highLevelTopics
-      );
+      const comprehensionProgress =
+        this.courseManager.getAllTopicsComprehension(
+          session,
+          "high-level",
+          highLevelTopics
+        );
 
       // Get feedback with comprehension scores in a single call
       const { response, comprehensionUpdates } =
@@ -129,9 +131,9 @@ export class HighLevelPhase {
           answer,
           course,
           session.conversationHistory.slice(-10),
+          session.existingUnderstanding || "Some - I know the basics",
           comprehensionProgress
         );
-
 
       // Display feedback first
       console.log(chalk.green(`\n${response}\n`));
@@ -282,16 +284,18 @@ export class HighLevelPhase {
 
       // Get current comprehension progress for context
       const highLevelTopics = course.concepts.map((c) => c.name);
-      const comprehensionProgress = this.courseManager.getAllTopicsComprehension(
-        session,
-        "high-level",
-        highLevelTopics
-      );
+      const comprehensionProgress =
+        this.courseManager.getAllTopicsComprehension(
+          session,
+          "high-level",
+          highLevelTopics
+        );
 
       const { response } = await this.ai.generateHighLevelResponse(
         question,
         course,
         session.conversationHistory.slice(-10),
+        session.existingUnderstanding || "Some - I know the basics",
         comprehensionProgress
       );
 

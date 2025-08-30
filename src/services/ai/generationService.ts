@@ -8,11 +8,12 @@ export class GenerationService {
 
   async generateHighLevelQuestion(
     course: Course,
-    conversationHistory: Array<{ role: string; content: string }>
+    conversationHistory: Array<{ role: string; content: string }>,
+    existingUnderstanding: string
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: highLevelPrompts.questionSystem(course.name),
+      system: highLevelPrompts.questionSystem(course.name, existingUnderstanding),
       prompt: `<context>
 ${
   conversationHistory.length > 0
@@ -34,13 +35,15 @@ Ask a probing question about ${
 
   async generateConceptQuestion(
     concept: Concept,
-    conversationHistory: Array<{ role: string; content: string }>
+    conversationHistory: Array<{ role: string; content: string }>,
+    existingUnderstanding: string
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
       system: conceptLearningPrompts.questionSystem(
         concept.name,
-        concept["high-level"]
+        concept["high-level"],
+        existingUnderstanding
       ),
       prompt: `<context>
 ${
@@ -117,7 +120,8 @@ Focus on questions like:
   async generateConnectionQuestion(
     connections: string[],
     course: Course,
-    previousQuestions: Array<{ question: string; answer: string }>
+    previousQuestions: Array<{ question: string; answer: string }>,
+    existingUnderstanding: string
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
@@ -125,17 +129,38 @@ Focus on questions like:
 You are an expert educator creating scenario-based synthesis questions for ${course.name}.
 </role>
 
+<user-level>
+Existing Understanding: ${existingUnderstanding}
+</user-level>
+
 <objective>
-Create challenging scenarios that require integrating knowledge from multiple concepts to solve real problems.
+Create ${
+  existingUnderstanding === 'None - Complete beginner'
+    ? 'approachable scenarios that help beginners see connections'
+    : existingUnderstanding === 'Some - I know the basics'
+    ? 'challenging scenarios that require integrating knowledge'
+    : 'complex, nuanced scenarios with multiple trade-offs'
+} between concepts to solve real problems.
 </objective>
 
 <scenario-design-principles>
-1. **Start with a Specific Situation**: "You're faced with..." or "A client presents with..."
-2. **Include Constraints or Complications**: Limited resources, competing priorities, unusual conditions
-3. **Require Decision-Making**: "What would you prioritize and why?"
-4. **Demand Trade-off Analysis**: "What would you sacrifice to achieve X?"
-5. **Test Edge Cases**: Situations where normal rules might not apply
-6. **Force Ranking or Comparison**: "Which approach would be most effective?"
+${
+  existingUnderstanding === 'None - Complete beginner'
+    ? `1. **Start with Relatable Situations**: "Imagine you need to..." or "A friend asks you..."
+2. **Provide Clear Context**: Explain any technical terms in the scenario
+3. **Focus on Fundamental Trade-offs**: "Would you choose X or Y and why?"
+4. **Guide Thinking Process**: "Consider how [concept A] affects [concept B]"`
+    : existingUnderstanding === 'Some - I know the basics'
+    ? `1. **Present Realistic Problems**: "Your team encounters..." or "A project requires..."
+2. **Include Multiple Constraints**: Time, budget, technical limitations
+3. **Require Prioritization**: "Given these constraints, what's most important?"
+4. **Test Applied Knowledge**: "How would you implement X while considering Y?"`
+    : `1. **Complex Professional Scenarios**: "As the lead architect..." or "The CEO asks you..."
+2. **Multiple Competing Factors**: Political, technical, financial, strategic
+3. **Demand Strategic Thinking**: "What's your 3-phase approach?"
+4. **Test Edge Cases**: "What if the usual approach fails?"
+5. **Require Innovation**: "How would you solve this unprecedented challenge?"`
+}
 </scenario-design-principles>
 
 <avoid>

@@ -8,29 +8,60 @@ export class AIService {
   private generationService = new GenerationService();
   private evaluationService = new EvaluationService();
 
+  async analyzeTopic(
+    topic: string,
+    timeAvailable: string,
+    existingUnderstanding: string
+  ): Promise<{
+    is_appropriate: boolean;
+    reason: string;
+    suggested_refinements: string[];
+    clarifying_questions: string[];
+  }> {
+    return this.courseService.analyzeTopic(
+      topic,
+      timeAvailable,
+      existingUnderstanding
+    );
+  }
+
+  async refineTopic(
+    originalTopic: string,
+    userResponse: string,
+    timeAvailable: string
+  ): Promise<string> {
+    return this.courseService.refineTopic(
+      originalTopic,
+      userResponse,
+      timeAvailable
+    );
+  }
+
   async generateCourseStructure(
     topic: string,
     documentContent: string | null,
     timeAvailable: string,
-    depth: string,
+    existingUnderstanding: string,
     learningGoals: string
   ): Promise<Course> {
     return this.courseService.generateCourseStructure(
       topic,
       documentContent,
       timeAvailable,
-      depth,
+      existingUnderstanding,
       learningGoals
     );
   }
 
   async generateHighLevelQuestion(
     course: Course,
-    conversationHistory: Array<{ role: string; content: string }>
+    conversationHistory: Array<{ role: string; content: string }>,
+    existingUnderstanding: string
   ): Promise<string> {
     return this.generationService.generateHighLevelQuestion(
       course,
-      conversationHistory
+      conversationHistory,
+      existingUnderstanding
     );
   }
 
@@ -38,6 +69,7 @@ export class AIService {
     userAnswer: string,
     course: Course,
     conversationHistory: Array<{ role: string; content: string }>,
+    existingUnderstanding: string,
     comprehensionProgress?: Map<string, number>
   ): Promise<{
     response: string;
@@ -47,6 +79,7 @@ export class AIService {
       userAnswer,
       course,
       conversationHistory,
+      existingUnderstanding,
       comprehensionProgress
     );
   }
@@ -54,11 +87,13 @@ export class AIService {
 
   async generateConceptQuestion(
     concept: Concept,
-    conversationHistory: Array<{ role: string; content: string }>
+    conversationHistory: Array<{ role: string; content: string }>,
+    existingUnderstanding: string
   ): Promise<string> {
     return this.generationService.generateConceptQuestion(
       concept,
-      conversationHistory
+      conversationHistory,
+      existingUnderstanding
     );
   }
 
@@ -66,6 +101,7 @@ export class AIService {
     userAnswer: string,
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
+    existingUnderstanding: string,
     unmasteredTopics?: string[]
   ): Promise<{
     response: string;
@@ -75,6 +111,7 @@ export class AIService {
       userAnswer,
       concept,
       conversationHistory,
+      existingUnderstanding,
       unmasteredTopics
     );
   }
@@ -95,13 +132,15 @@ export class AIService {
     userAnswer: string,
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
-    unmasteredTopics?: string[]
+    unmasteredTopics?: string[],
+    existingUnderstanding: string = 'Some - I know the basics'
   ): Promise<{ comprehension: number; response: string; targetTopic: string }> {
     return this.evaluationService.evaluateConceptAnswer(
       userAnswer,
       concept,
       conversationHistory,
-      unmasteredTopics
+      unmasteredTopics,
+      existingUnderstanding
     );
   }
 
@@ -111,7 +150,8 @@ export class AIService {
     userAnswer: string,
     concept: Concept,
     otherConcepts: string[],
-    previousAttempts: Array<{ userAnswer: string; aiResponse: string }>
+    previousAttempts: Array<{ userAnswer: string; aiResponse: string }>,
+    existingUnderstanding: string
   ): Promise<{ comprehension: number; response: string }> {
     return this.evaluationService.evaluateFlashcardAnswer(
       item,
@@ -119,7 +159,8 @@ export class AIService {
       userAnswer,
       concept,
       otherConcepts,
-      previousAttempts
+      previousAttempts,
+      existingUnderstanding
     );
   }
 
@@ -152,24 +193,28 @@ export class AIService {
   async generateConnectionQuestion(
     connections: string[],
     course: Course,
-    previousQuestions: Array<{ question: string; answer: string }>
+    previousQuestions: Array<{ question: string; answer: string }>,
+    existingUnderstanding: string
   ): Promise<string> {
     return this.generationService.generateConnectionQuestion(
       connections,
       course,
-      previousQuestions
+      previousQuestions,
+      existingUnderstanding
     );
   }
 
   async evaluateConnectionAnswer(
     question: string,
     userAnswer: string,
-    course: Course
+    course: Course,
+    existingUnderstanding: string
   ): Promise<{ response: string; followUp: string | null }> {
     return this.evaluationService.evaluateConnectionAnswer(
       question,
       userAnswer,
-      course
+      course,
+      existingUnderstanding
     );
   }
 

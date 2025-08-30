@@ -16,6 +16,7 @@ export class EvaluationService {
     userAnswer: string,
     course: Course,
     conversationHistory: Array<{ role: string; content: string }>,
+    existingUnderstanding: string,
     comprehensionProgress?: Map<string, number>
   ): Promise<{
     response: string;
@@ -51,7 +52,7 @@ export class EvaluationService {
     const result = await generateText({
       model: this.model,
       stopWhen: stepCountIs(5), // stop after 5 steps if tools were called
-      system: `${highLevelPrompts.evaluationSystem(course.name, conceptNames)}
+      system: `${highLevelPrompts.evaluationSystem(course.name, conceptNames, existingUnderstanding)}
 
 You must follow these steps in order:
 1. First, call the update_comprehension tool for EACH topic that the user addressed in their response. Score their understanding from 0-5:
@@ -128,6 +129,7 @@ Evaluate comprehension, provide feedback, then ask a NEW question that:
     userAnswer: string,
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
+    existingUnderstanding: string,
     unmasteredTopics?: string[]
   ): Promise<{
     response: string;
@@ -144,7 +146,8 @@ Evaluate comprehension, provide feedback, then ask a NEW question that:
       system: `${conceptLearningPrompts.evaluationSystem(
         concept.name,
         highLevelTopics,
-        unmasteredTopics
+        unmasteredTopics,
+        existingUnderstanding
       )}
 
 IMPORTANT: Before providing your response, you MUST first call the update_comprehension tool for EACH topic that the user addressed in their response. Score their understanding of each topic from 0-5:
@@ -265,7 +268,8 @@ Analyze which topics the user addressed and their level of understanding for eac
     userAnswer: string,
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
-    unmasteredTopics?: string[]
+    unmasteredTopics?: string[],
+    existingUnderstanding: string = 'Some - I know the basics'
   ): Promise<{ comprehension: number; response: string; targetTopic: string }> {
     const highLevelTopics = concept["high-level"];
     const { object } = await generateObject({
@@ -274,7 +278,8 @@ Analyze which topics the user addressed and their level of understanding for eac
       system: conceptLearningPrompts.evaluationSystem(
         concept.name,
         highLevelTopics,
-        unmasteredTopics
+        unmasteredTopics,
+        existingUnderstanding
       ),
       prompt: `<user-response>
 ${userAnswer}
@@ -300,7 +305,8 @@ Provide substantive feedback that advances their understanding, then ask a speci
     userAnswer: string,
     concept: Concept,
     otherConcepts: string[],
-    previousAttempts: Array<{ userAnswer: string; aiResponse: string }>
+    previousAttempts: Array<{ userAnswer: string; aiResponse: string }>,
+    existingUnderstanding: string
   ): Promise<{ comprehension: number; response: string }> {
     const { object } = await generateObject({
       model: this.model,
@@ -308,7 +314,9 @@ Provide substantive feedback that advances their understanding, then ask a speci
       system: `You are evaluating flashcard answers for the concept "${concept.name}".
       The user needs to demonstrate knowledge of ALL fields: ${fields.join(", ")}.
       
-      Score comprehension 0-5 (4+ counts as success).
+      User's Existing Understanding: ${existingUnderstanding}
+      
+      Score comprehension 0-5 (4+ counts as success, adjusted for their level).
       
       CRITICAL FORMATTING REQUIREMENTS:
       YOU MUST use this exact structure with proper spacing between sections:
@@ -336,7 +344,14 @@ Provide substantive feedback that advances their understanding, then ask a speci
       - Use specific numbers, names, examples - not generalizations
       - Maximum 1 line per field - just the essential facts
       - Don't soften feedback - be precise about what's wrong
-      - Focus on memorizable facts, not explanations`,
+      - Focus on memorizable facts, not explanations
+      ${
+        existingUnderstanding === 'None - Complete beginner'
+          ? '- Provide simple memory aids or mnemonics when helpful'
+          : existingUnderstanding === 'Some - I know the basics'
+          ? '- Focus on connections to existing knowledge'
+          : '- Use technical language and expect precise terminology'
+      }`,
       prompt: `Item: ${item}
       Required fields: ${fields.join(", ")}
       Current user answer: ${userAnswer}
@@ -390,13 +405,16 @@ Provide substantive feedback that advances their understanding, then ask a speci
   async evaluateConnectionAnswer(
     question: string,
     userAnswer: string,
-    course: Course
+    course: Course,
+    existingUnderstanding: string
   ): Promise<{ response: string; followUp: string | null }> {
     const { text } = await generateText({
       model: this.model,
       system: `Evaluate the user's synthesis of concepts in ${course.name}.
       Be DIRECT and specific about their understanding.
       Provide concrete feedback with facts.
+      
+      User's Existing Understanding: ${existingUnderstanding}
       
       STRUCTURE:
       1. ✓ Correct or ❌ Incorrect/Incomplete assessment

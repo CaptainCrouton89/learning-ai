@@ -41,7 +41,9 @@ export class CourseManager {
       conceptsProgress: new Map(),
       conversationHistory: [],
       startTime: new Date(),
-      lastActivityTime: new Date()
+      lastActivityTime: new Date(),
+      existingUnderstanding: 'Some - I know the basics',
+      timeAvailable: '15-60min'
     };
 
     await this.saveSession(session);
