@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+courses/*.json
+sessions/*.json
+.DS_Store
+*.log

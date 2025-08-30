@@ -1,0 +1,175 @@
+{
+  "name": "wine",
+  "concepts": [
+    {
+      "name": "wine-types",
+      "high-level": [
+        "regional impact on flavors",
+        "general guidance on pairing"
+      ],
+      "memorize": {
+        "fields": ["acidity", "body", "flavors", "pairing", "region", "style"],
+        "items": [
+          "cabernet-sauvignon",
+          "merlot",
+          "pinot-noir",
+          "chardonnay",
+          "sauvignon-blanc",
+          "pinot-grigio",
+          "pinot-blanc"
+        ]
+      }
+    },
+    {
+      "name": "wine-regions",
+      "high-level": [
+        "terroir and its impact on wine character",
+        "old world vs new world distinctions",
+        "climate classifications and their effects"
+      ],
+      "memorize": {
+        "fields": [
+          "country",
+          "climate",
+          "signature-grapes",
+          "wine-style",
+          "classification-system",
+          "notable-sub-regions"
+        ],
+        "items": [
+          "bordeaux",
+          "burgundy",
+          "tuscany",
+          "rioja",
+          "napa-valley",
+          "barossa-valley",
+          "mendoza",
+          "mosel",
+          "champagne",
+          "douro-valley"
+        ]
+      }
+    },
+    {
+      "name": "wine-tasting-terminology",
+      "high-level": [
+        "difference between aroma and bouquet",
+        "primary, secondary, and tertiary characteristics",
+        "how to identify and describe wine faults"
+      ],
+      "memorize": {
+        "fields": [
+          "category",
+          "definition",
+          "example-descriptors",
+          "wine-styles-commonly-found-in"
+        ],
+        "items": [
+          "tannins",
+          "minerality",
+          "oxidation",
+          "reduction",
+          "brett",
+          "cork-taint",
+          "volatile-acidity",
+          "malolactic-fermentation",
+          "phenolic-ripeness",
+          "extraction"
+        ]
+      }
+    },
+    {
+      "name": "wine-service",
+      "high-level": [
+        "decanting principles and when to apply",
+        "proper storage conditions and aging potential",
+        "glassware selection impact on aromatics"
+      ],
+      "memorize": {
+        "fields": [
+          "ideal-temperature",
+          "glass-type",
+          "decanting-time",
+          "serving-order",
+          "storage-position"
+        ],
+        "items": [
+          "sparkling-wines",
+          "light-white-wines",
+          "full-bodied-whites",
+          "light-red-wines",
+          "medium-red-wines",
+          "full-bodied-reds",
+          "dessert-wines",
+          "fortified-wines"
+        ]
+      }
+    },
+    {
+      "name": "winemaking-processes",
+      "high-level": [
+        "fermentation types and their impacts",
+        "oak aging vs steel tank aging",
+        "natural wine movement principles"
+      ],
+      "memorize": {
+        "fields": [
+          "process-type",
+          "purpose",
+          "effect-on-wine",
+          "typical-duration",
+          "common-applications"
+        ],
+        "items": [
+          "carbonic-maceration",
+          "malolactic-fermentation",
+          "sur-lie-aging",
+          "batonnage",
+          "cold-stabilization",
+          "micro-oxygenation",
+          "whole-cluster-fermentation",
+          "skin-contact",
+          "chaptalization",
+          "reverse-osmosis"
+        ]
+      }
+    },
+    {
+      "name": "wine-and-food-pairing",
+      "high-level": [
+        "complementary vs contrasting pairing strategies",
+        "weight and intensity matching principles",
+        "how cooking methods affect pairing choices"
+      ],
+      "memorize": {
+        "fields": [
+          "food-category",
+          "key-consideration",
+          "best-wine-characteristics",
+          "specific-recommendations",
+          "avoid"
+        ],
+        "items": [
+          "fatty-fish",
+          "red-meat",
+          "spicy-cuisine",
+          "creamy-sauces",
+          "acidic-dishes",
+          "umami-rich-foods",
+          "bitter-vegetables",
+          "sweet-desserts",
+          "aged-cheeses",
+          "raw-preparations"
+        ]
+      }
+    }
+  ],
+  "drawing-connections": [
+    "how terroir influences optimal winemaking processes for each region",
+    "matching wine service temperature to tannin levels and body",
+    "impact of winemaking processes on aging potential and decanting needs",
+    "how wine process affects the wine's flavor profile",
+    "how regional wine styles dictate traditional food pairings",
+    "relationship between acidity levels and complementary vs contrasting pairings"
+  ]
+}
