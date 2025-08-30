@@ -137,26 +137,60 @@ export class InitializationPhase {
       }
     }
 
-    console.log(chalk.cyan("\n📝 Tell me what you want to focus on"));
-    if (timeAvailable === "<15min") {
-      console.log(
-        chalk.gray(
-          'For a micro-session, be very specific: "I want to understand just the factory pattern"'
-        )
-      );
-      console.log(
-        chalk.gray('or: "Help me understand wine acidity basics"')
-      );
-    } else if (timeAvailable === "15-60min") {
-      console.log(
-        chalk.gray(
-          'For a quick session, focus on core concepts: "I want to understand the main creational patterns"'
-        )
-      );
-      console.log(
-        chalk.gray('or: "Help me learn wine structure and food pairing basics"')
-      );
+    // After topic refinement, generate smart learning goal suggestions
+    let focusDescription: string;
+    
+    if (timeAvailable === "<15min" || timeAvailable === "15-60min") {
+      // Generate AI-powered suggestions for shorter sessions
+      const goalSpinner = ora("Generating personalized learning goals...").start();
+      
+      try {
+        const learningGoals = await this.ai.generateLearningGoals(
+          topic,
+          timeAvailable,
+          existingUnderstanding
+        );
+        goalSpinner.succeed("Learning goals ready!");
+        
+        console.log(chalk.cyan("\n📝 What would you like to achieve in this session?"));
+        
+        const { selectedFocus } = await inquirer.prompt([
+          {
+            type: "list",
+            name: "selectedFocus",
+            message: `For "${topic}", I want to:`,
+            choices: [
+              ...learningGoals.map(goal => ({ name: goal, value: goal })),
+              { name: "Something else (specify)", value: "custom" },
+            ],
+          },
+        ]);
+        
+        if (selectedFocus === "custom") {
+          const { customFocus } = await inquirer.prompt([
+            {
+              type: "input",
+              name: "customFocus",
+              message: "What specifically do you want to learn?",
+              validate: (input) =>
+                input.trim().length > 5 || "Please describe your learning goal",
+            },
+          ]);
+          focusDescription = customFocus;
+        } else {
+          focusDescription = selectedFocus;
+        }
+      } catch (error) {
+        goalSpinner.fail("Failed to generate learning goal suggestions");
+        throw new Error(
+          `Could not generate learning goals for topic "${topic}": ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
     } else {
+      // For longer sessions, keep the open-ended approach with examples
+      console.log(chalk.cyan("\n📝 Tell me what you want to focus on"));
       console.log(
         chalk.gray(
           'For example: "I want to understand the basics and practical applications"'
@@ -165,20 +199,21 @@ export class InitializationPhase {
       console.log(
         chalk.gray('or: "Help me master advanced techniques and edge cases"')
       );
+      console.log(
+        chalk.gray('or: "I need to learn how to troubleshoot common problems"\n')
+      );
+      
+      const { inputFocus } = await inquirer.prompt([
+        {
+          type: "input",
+          name: "inputFocus",
+          message: "What aspects of " + topic + " do you want to focus on?",
+          validate: (input) =>
+            input.trim().length > 10 || "Please describe what you want to learn",
+        },
+      ]);
+      focusDescription = inputFocus;
     }
-    console.log(
-      chalk.gray('or: "I need to learn how to troubleshoot common problems"\n')
-    );
-
-    const { focusDescription } = await inquirer.prompt([
-      {
-        type: "input",
-        name: "focusDescription",
-        message: "What aspects of " + topic + " do you want to focus on?",
-        validate: (input) =>
-          input.trim().length > 10 || "Please describe what you want to learn",
-      },
-    ]);
 
     const spinner = ora("Creating your personalized course...").start();
 

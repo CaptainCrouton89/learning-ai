@@ -10,7 +10,6 @@ import {
 
 export class EvaluationService {
   private model = openai("gpt-4.1-mini");
-  private nanoModel = openai("gpt-4.1-nano");
 
   async generateHighLevelResponse(
     userAnswer: string,
@@ -29,21 +28,23 @@ export class EvaluationService {
     }> = [];
 
     // Format progress for the prompt with emphasis on what needs work
-    let progressSummary = 'No prior progress';
+    let progressSummary = "No prior progress";
     let topicsNeedingWork: string[] = [];
-    
+
     if (comprehensionProgress) {
       const entries = Array.from(comprehensionProgress.entries());
       progressSummary = entries
         .map(([topic, score]) => {
-          const status = score >= 4 ? '✓' : score >= 2 ? '◐' : '○';
+          const status = score >= 4 ? "✓" : score >= 2 ? "◐" : "○";
           if (score < 4) topicsNeedingWork.push(topic);
           return `${topic}: ${score}/5 ${status}`;
         })
-        .join('\n');
-        
+        .join("\n");
+
       if (topicsNeedingWork.length > 0) {
-        progressSummary += `\n\nTopics needing more exploration (< 4/5): ${topicsNeedingWork.join(', ')}`;
+        progressSummary += `\n\nTopics needing more exploration (< 4/5): ${topicsNeedingWork.join(
+          ", "
+        )}`;
       } else {
         progressSummary += `\n\nAll topics well understood! Focus on synthesis and connections.`;
       }
@@ -52,7 +53,11 @@ export class EvaluationService {
     const result = await generateText({
       model: this.model,
       stopWhen: stepCountIs(5), // stop after 5 steps if tools were called
-      system: `${highLevelPrompts.evaluationSystem(course.name, conceptNames, existingUnderstanding)}
+      system: `${highLevelPrompts.evaluationSystem(
+        course.name,
+        conceptNames,
+        existingUnderstanding
+      )}
 
 You must follow these steps in order:
 1. First, call the update_comprehension tool for EACH topic that the user addressed in their response. Score their understanding from 0-5:
@@ -104,7 +109,9 @@ Evaluate comprehension, provide feedback, then ask a NEW question that:
           }),
           execute: async ({ topic, comprehension }) => {
             // Only update if new score is higher than existing
-            const existing = comprehensionUpdates.find(u => u.topic === topic);
+            const existing = comprehensionUpdates.find(
+              (u) => u.topic === topic
+            );
             if (!existing || comprehension > existing.comprehension) {
               if (existing) {
                 existing.comprehension = comprehension;
@@ -119,11 +126,8 @@ Evaluate comprehension, provide feedback, then ask a NEW question that:
       },
     });
 
-
     return { response: result.text, comprehensionUpdates };
   }
-
-
 
   async generateConceptResponse(
     userAnswer: string,
@@ -180,7 +184,9 @@ First, evaluate and update comprehension for each topic addressed. Then provide 
           }),
           execute: async ({ topic, comprehension }) => {
             // Only update if new score is higher than existing
-            const existing = comprehensionUpdates.find(u => u.topic === topic);
+            const existing = comprehensionUpdates.find(
+              (u) => u.topic === topic
+            );
             if (!existing || comprehension > existing.comprehension) {
               if (existing) {
                 existing.comprehension = comprehension;
@@ -198,78 +204,12 @@ First, evaluate and update comprehension for each topic addressed. Then provide 
     return { response: result.text, comprehensionUpdates };
   }
 
-  async evaluateConceptComprehension(
-    userAnswer: string,
-    concept: Concept,
-    conversationHistory: Array<{ role: string; content: string }>
-  ): Promise<Array<{ topic: string; comprehension: number }>> {
-    const highLevelTopics = concept["high-level"];
-
-    const comprehensionUpdates: Array<{
-      topic: string;
-      comprehension: number;
-    }> = [];
-
-    await generateText({
-      model: this.nanoModel,
-      system: `You are evaluating comprehension for the concept "${
-        concept.name
-      }".
-Available topics: ${highLevelTopics.join(", ")}
-
-Based on the user's response, determine which topics they demonstrated understanding of and score their comprehension (0-5).
-- 0-1: No understanding or incorrect
-- 2-3: Partial understanding
-- 4-5: Good to excellent understanding
-
-Call the update_comprehension tool for each topic the user addressed in their response.`,
-      prompt: `<user-response>
-${userAnswer}
-</user-response>
-
-<context>
-Recent conversation:
-${conversationHistory
-  .slice(-4)
-  .map((entry) => `${entry.role}: ${entry.content}`)
-  .join("\n\n")}
-</context>
-
-Analyze which topics the user addressed and their level of understanding for each.`,
-      stopWhen: stepCountIs(5),
-      tools: {
-        update_comprehension: tool({
-          description: "Update comprehension score for a specific topic",
-          inputSchema: z.object({
-            topic: z.enum(highLevelTopics as [string, ...string[]]),
-            comprehension: z.number().min(0).max(5),
-          }),
-          execute: async ({ topic, comprehension }) => {
-            // Only update if new score is higher than existing
-            const existing = comprehensionUpdates.find(u => u.topic === topic);
-            if (!existing || comprehension > existing.comprehension) {
-              if (existing) {
-                existing.comprehension = comprehension;
-              } else {
-                comprehensionUpdates.push({ topic, comprehension });
-              }
-              return `Updated ${topic} comprehension to ${comprehension}`;
-            }
-            return `Kept ${topic} comprehension at ${existing.comprehension} (new score ${comprehension} not higher)`;
-          },
-        }),
-      },
-    });
-
-    return comprehensionUpdates;
-  }
-
   async evaluateConceptAnswer(
     userAnswer: string,
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
     unmasteredTopics?: string[],
-    existingUnderstanding: string = 'Some - I know the basics'
+    existingUnderstanding: string = "Some - I know the basics"
   ): Promise<{ comprehension: number; response: string; targetTopic: string }> {
     const highLevelTopics = concept["high-level"];
     const { object } = await generateObject({
@@ -311,8 +251,12 @@ Provide substantive feedback that advances their understanding, then ask a speci
     const { object } = await generateObject({
       model: this.model,
       schema: FlashcardResponseSchema,
-      system: `You are evaluating flashcard answers for the concept "${concept.name}".
-      The user needs to demonstrate knowledge of ALL fields: ${fields.join(", ")}.
+      system: `You are evaluating flashcard answers for the concept "${
+        concept.name
+      }".
+      The user needs to demonstrate knowledge of ALL fields: ${fields.join(
+        ", "
+      )}.
       
       User's Existing Understanding: ${existingUnderstanding}
       
@@ -336,7 +280,9 @@ Provide substantive feedback that advances their understanding, then ask a speci
       
       **Why this matters:** {1-2 sentences on practical importance}
       
-      **Remember this connection:** {Specific link to ${otherConcepts[0] || 'another concept'} with concrete example}
+      **Remember this connection:** {Specific link to ${
+        otherConcepts[0] || "another concept"
+      } with concrete example}
       
       STRICT RULES:
       - Be DIRECT - start with "Incorrect" or "Correct", not what they said
@@ -346,22 +292,29 @@ Provide substantive feedback that advances their understanding, then ask a speci
       - Don't soften feedback - be precise about what's wrong
       - Focus on memorizable facts, not explanations
       ${
-        existingUnderstanding === 'None - Complete beginner'
-          ? '- Provide simple memory aids or mnemonics when helpful'
-          : existingUnderstanding === 'Some - I know the basics'
-          ? '- Focus on connections to existing knowledge'
-          : '- Use technical language and expect precise terminology'
+        existingUnderstanding === "None - Complete beginner"
+          ? "- Provide simple memory aids or mnemonics when helpful"
+          : existingUnderstanding === "Some - I know the basics"
+          ? "- Focus on connections to existing knowledge"
+          : "- Use technical language and expect precise terminology"
       }`,
       prompt: `Item: ${item}
       Required fields: ${fields.join(", ")}
       Current user answer: ${userAnswer}
       
       Previous attempts for this item:
-      ${previousAttempts.length > 0 ? previousAttempts.map((attempt, i) => 
-        `Attempt ${i + 1}:
+      ${
+        previousAttempts.length > 0
+          ? previousAttempts
+              .map(
+                (attempt, i) =>
+                  `Attempt ${i + 1}:
         User: ${attempt.userAnswer}
         AI Feedback: ${attempt.aiResponse}`
-      ).join('\n\n') : 'None'}
+              )
+              .join("\n\n")
+          : "None"
+      }
       
       Evaluate the current answer and provide insightful feedback that deepens understanding. Consider the previous attempts to avoid repeating feedback.`,
     });

@@ -90,7 +90,7 @@ Each phase class (`src/phases/`) follows this pattern:
 - **Comprehension Scoring**: 0-5 scale, 4+ counts as success, topic-based tracking
 - **Progress Tracking**: Items, topics, and concept-level progress with timestamps
 - **Session Management**: Conversation history, phase state, resume capability
-- **Error Handling**: Early error throwing, no fallbacks (pre-production mode)
+- **Error Handling**: Early error throwing, no fallbacks EVER
 
 ### Directory Structure
 
@@ -124,3 +124,7 @@ src/
 - **Courses**: `courses/{courseName}.json` - Course structure with concepts and items
 - **Sessions**: `sessions/{courseId}-session.json` - Learning progress and history
 - **Map Serialization**: Complex nested Maps converted to arrays for JSON storage
+
+### Critical Reminders:
+
+- Never fallback—throw informative errors instead

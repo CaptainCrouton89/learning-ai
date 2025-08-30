@@ -61,3 +61,7 @@ export const ConceptDetailSchema = z.object({
       "Flashcard structure with field headers and item names to memorize"
     ),
 });
+
+export const LearningGoalSuggestionsSchema = z.object({
+  goals: z.array(z.string()).length(4).describe("Four specific learning goals tailored to the topic and time available")
+});

@@ -1,12 +1,17 @@
+import { openai } from "@ai-sdk/openai";
+import { generateObject } from "ai";
 import { Concept, Course } from "../../types/course.js";
 import { CourseService } from "./courseService.js";
 import { EvaluationService } from "./evaluationService.js";
 import { GenerationService } from "./generationService.js";
+import { learningGoalSuggestionPrompts } from "./prompts.js";
+import { LearningGoalSuggestionsSchema } from "./schemas.js";
 
 export class AIService {
   private courseService = new CourseService();
   private generationService = new GenerationService();
   private evaluationService = new EvaluationService();
+  private fastModel = openai("gpt-4.1-mini");
 
   async analyzeTopic(
     topic: string,
@@ -84,7 +89,6 @@ export class AIService {
     );
   }
 
-
   async generateConceptQuestion(
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
@@ -116,24 +120,12 @@ export class AIService {
     );
   }
 
-  async evaluateConceptComprehension(
-    userAnswer: string,
-    concept: Concept,
-    conversationHistory: Array<{ role: string; content: string }>
-  ): Promise<Array<{ topic: string; comprehension: number }>> {
-    return this.evaluationService.evaluateConceptComprehension(
-      userAnswer,
-      concept,
-      conversationHistory
-    );
-  }
-
   async evaluateConceptAnswer(
     userAnswer: string,
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
     unmasteredTopics?: string[],
-    existingUnderstanding: string = 'Some - I know the basics'
+    existingUnderstanding: string = "Some - I know the basics"
   ): Promise<{ comprehension: number; response: string; targetTopic: string }> {
     return this.evaluationService.evaluateConceptAnswer(
       userAnswer,
@@ -294,6 +286,24 @@ export class AIService {
       concept,
       itemsCovered
     );
+  }
+
+  async generateLearningGoals(
+    topic: string,
+    timeAvailable: string,
+    existingUnderstanding: string
+  ): Promise<string[]> {
+    const { object } = await generateObject({
+      model: this.fastModel,
+      schema: LearningGoalSuggestionsSchema,
+      system: learningGoalSuggestionPrompts.system,
+      prompt: learningGoalSuggestionPrompts.userPrompt(
+        topic,
+        timeAvailable,
+        existingUnderstanding
+      ),
+    });
+    return object.goals;
   }
 }
 
