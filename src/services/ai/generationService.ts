@@ -97,4 +97,76 @@ Generate a focused question or teaching point that explores a specific aspect of
 
     return text;
   }
+
+  async generateElaborationQuestion(
+    item: string,
+    fields: string[],
+    concept: Concept
+  ): Promise<string> {
+    const { text } = await generateText({
+      model: this.model,
+      system: `Generate an elaboration question about ${item} from ${concept.name}.
+      The user struggled with this item. Ask "why" or "what causes" questions to deepen understanding.
+      Focus on the underlying reasons, mechanisms, or causes.
+      Keep the question concise and focused.`,
+      prompt: `Item: ${item}
+      Fields: ${fields.join(", ")}
+      Generate a question like "Why is X true?" or "What causes Y?" or "How does X lead to Y?"
+      Make it specific to this item and help the user understand the deeper reasoning.`,
+    });
+
+    return text;
+  }
+
+  async generateConnectionToStruggling(
+    performingItem: string,
+    strugglingItem: string,
+    concept: Concept
+  ): Promise<string> {
+    const { text } = await generateText({
+      model: this.model,
+      system: `Generate a connection question linking two items from ${concept.name}.
+      The user knows ${performingItem} well but struggles with ${strugglingItem}.
+      Create a question that helps them understand ${strugglingItem} by comparing or relating it to ${performingItem}.`,
+      prompt: `Well-known item: ${performingItem}
+      Struggling item: ${strugglingItem}
+      
+      Generate a question like:
+      - "How does ${performingItem} compare to ${strugglingItem}?"
+      - "What similarities/differences exist between these two?"
+      - "How does understanding ${performingItem} help you understand ${strugglingItem}?"
+      
+      Be specific and help build connections between what they know and what they're learning.`,
+    });
+
+    return text;
+  }
+
+  async generateHighLevelRecall(
+    concept: Concept,
+    itemsCovered: string[]
+  ): Promise<string> {
+    const { text } = await generateText({
+      model: this.model,
+      system: `Generate a high-level synthesis question about ${concept.name}.
+      This should require recall and explanation of multiple items covered.
+      Focus on overall understanding and ability to synthesize information.`,
+      prompt: `Concept: ${concept.name}
+      Items covered so far: ${itemsCovered.join(", ")}
+      Topics: ${concept["high-level"].join(", ")}
+      
+      Generate a question that:
+      - Requires synthesis of multiple items
+      - Tests overall understanding of the concept
+      - Encourages explanation and recall
+      - Is open-ended but focused
+      
+      Examples:
+      - "Explain the key characteristics that define..."
+      - "How do the various types of X relate to each other?"
+      - "What patterns do you see across all the X we've covered?"`,
+    });
+
+    return text;
+  }
 }

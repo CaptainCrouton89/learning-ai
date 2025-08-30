@@ -392,4 +392,85 @@ Provide substantive feedback that advances their understanding, then ask a speci
 
     return { response: text, followUp: null };
   }
+
+  async evaluateElaborationAnswer(
+    question: string,
+    userAnswer: string,
+    item: string,
+    concept: Concept
+  ): Promise<string> {
+    const { text } = await generateText({
+      model: this.model,
+      system: `Evaluate the user's understanding of the "why" or "what causes" behind ${item} in ${concept.name}.
+      Focus on whether they understand the underlying reasons and mechanisms.
+      Provide constructive feedback that deepens their understanding.
+      NO follow-up questions - just provide feedback and clarification.`,
+      prompt: `Elaboration question: ${question}
+      About item: ${item}
+      User answer: ${userAnswer}
+      
+      Provide feedback that:
+      - Acknowledges what they got right
+      - Corrects any misunderstandings
+      - Explains the actual reasons/causes if they missed them
+      - Keeps focus on the "why" behind the facts`,
+    });
+
+    return text;
+  }
+
+  async evaluateConnectionQuestionAnswer(
+    question: string,
+    userAnswer: string,
+    performingItem: string,
+    strugglingItem: string,
+    concept: Concept
+  ): Promise<string> {
+    const { text } = await generateText({
+      model: this.model,
+      system: `Evaluate how well the user connected ${performingItem} (which they know well) to ${strugglingItem} (which they struggle with) in ${concept.name}.
+      Focus on whether they made meaningful connections and comparisons.
+      Help reinforce their understanding of the struggling item through the connection.
+      NO follow-up questions - just provide feedback.`,
+      prompt: `Connection question: ${question}
+      Linking: ${performingItem} (known) to ${strugglingItem} (struggling)
+      User answer: ${userAnswer}
+      
+      Provide feedback that:
+      - Validates correct connections they made
+      - Highlights key similarities/differences they may have missed
+      - Reinforces understanding of ${strugglingItem} through its relationship to ${performingItem}
+      - Clarifies any misconceptions`,
+    });
+
+    return text;
+  }
+
+  async evaluateHighLevelAnswer(
+    question: string,
+    userAnswer: string,
+    concept: Concept,
+    itemsCovered: string[]
+  ): Promise<string> {
+    const { text } = await generateText({
+      model: this.model,
+      system: `Evaluate the user's high-level synthesis and recall for ${concept.name}.
+      They should demonstrate understanding across multiple items and see patterns.
+      Provide feedback that reinforces connections and patterns.
+      NO follow-up questions - just provide comprehensive feedback.`,
+      prompt: `High-level question: ${question}
+      Items covered: ${itemsCovered.join(", ")}
+      Topics: ${concept["high-level"].join(", ")}
+      User answer: ${userAnswer}
+      
+      Provide feedback that:
+      - Acknowledges the connections and patterns they identified
+      - Points out any important patterns or relationships they missed
+      - Reinforces the big picture understanding
+      - Corrects any conceptual errors
+      - Draws together the various items into a cohesive understanding`,
+    });
+
+    return text;
+  }
 }

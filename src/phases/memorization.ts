@@ -2,64 +2,135 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { AIService } from '../services/ai/index.js';
 import { CourseManager } from '../services/courseManager.js';
-import { Course, Concept, LearningSession } from '../types/course.js';
+import { Course, Concept, LearningSession, FlashcardSchedule } from '../types/course.js';
 
 export class MemorizationPhase {
   private ai = new AIService();
   private courseManager = new CourseManager();
-  private questionCounter = 0;
-  private abstractQuestionInterval = 10;
+  private positionCounter = 0;
+  private readonly MIN_EASE = 1.3;
+  private readonly MAX_EASE = 4.0;
+  private readonly INITIAL_EASE = 2.5;
+  private itemsCovered: string[] = [];
 
   async start(concept: Concept, course: Course, session: LearningSession): Promise<void> {
     console.log(chalk.blue(`\n🧠 Flashcard Practice: ${concept.name}\n`));
+    console.log(chalk.gray('Using spaced repetition - harder cards will appear more frequently.\n'));
     console.log(chalk.gray('You\'ll need to correctly answer each item twice to master it.\n'));
 
     await this.courseManager.updateSessionPhase(session, 'memorization', concept.name);
 
-    const allItems = [...concept.memorize.items];
-    const itemPool = new Map<string, number>();
-    
-    allItems.forEach(item => itemPool.set(item, 0));
+    const scheduleQueue: FlashcardSchedule[] = concept.memorize.items.map(item => ({
+      item,
+      easeFactor: this.INITIAL_EASE,
+      interval: 0,
+      duePosition: 0,
+      successCount: 0
+    }));
 
-    while (itemPool.size > 0) {
-      const remainingItems = Array.from(itemPool.keys());
-      const randomItem = remainingItems[Math.floor(Math.random() * remainingItems.length)];
+    while (scheduleQueue.length > 0) {
+      const nextCard = this.selectNextCard(scheduleQueue);
+      if (!nextCard) break;
 
-      await this.askFlashcardQuestion(
-        randomItem,
+      const evaluation = await this.askFlashcardQuestion(
+        nextCard,
         concept,
         course,
         session,
-        itemPool
+        scheduleQueue
       );
 
-      this.questionCounter++;
+      this.positionCounter++;
 
-      if (this.questionCounter % this.abstractQuestionInterval === 0 && itemPool.size > 0) {
-        await this.askAbstractQuestion(concept, course, session);
+      const specialQuestionType = await this.determineSpecialQuestion(
+        evaluation.comprehension,
+        nextCard.item,
+        concept,
+        session
+      );
+
+      if (specialQuestionType && scheduleQueue.length > 0) {
+        await this.askSpecialQuestion(
+          specialQuestionType,
+          nextCard.item,
+          concept,
+          course,
+          session,
+          evaluation.comprehension
+        );
       }
 
-      if (itemPool.size > 0) {
-        console.log(chalk.gray(`\n${itemPool.size} items remaining to master...\n`));
+      const remaining = scheduleQueue.filter(card => card.successCount < 2).length;
+      if (remaining > 0) {
+        console.log(chalk.gray(`\n${remaining} items remaining to master...\n`));
       }
     }
 
     console.log(chalk.green(`\n🎉 Excellent! You've mastered all items in "${concept.name}"!\n`));
   }
 
+  private selectNextCard(queue: FlashcardSchedule[]): FlashcardSchedule | null {
+    const activeCards = queue.filter(card => card.successCount < 2);
+    if (activeCards.length === 0) return null;
+
+    const overdueCards = activeCards.filter(card => card.duePosition <= this.positionCounter);
+    
+    if (overdueCards.length > 0) {
+      overdueCards.sort((a, b) => a.duePosition - b.duePosition);
+      return overdueCards[0];
+    }
+
+    activeCards.sort((a, b) => a.duePosition - b.duePosition);
+    return activeCards[0];
+  }
+
+  private calculateInterval(comprehension: number, easeFactor: number): number {
+    if (comprehension <= 1) {
+      return 1;
+    } else if (comprehension <= 3) {
+      return Math.max(2, Math.floor(easeFactor * 0.8));
+    } else if (comprehension === 4) {
+      return Math.ceil(easeFactor * 3);
+    } else {
+      return Math.ceil(easeFactor * 5);
+    }
+  }
+
+  private updateEaseFactor(comprehension: number, currentEase: number): number {
+    let newEase = currentEase;
+    
+    if (comprehension <= 1) {
+      newEase *= 0.8;
+    } else if (comprehension <= 3) {
+      newEase *= 0.85;
+    } else if (comprehension === 5) {
+      newEase *= 1.15;
+    }
+    
+    return Math.max(this.MIN_EASE, Math.min(this.MAX_EASE, newEase));
+  }
+
   private async askFlashcardQuestion(
-    item: string,
+    schedule: FlashcardSchedule,
     concept: Concept,
     course: Course,
     session: LearningSession,
-    itemPool: Map<string, number>
-  ): Promise<void> {
+    scheduleQueue: FlashcardSchedule[]
+  ): Promise<{ comprehension: number; response: string }> {
+    const { item } = schedule;
     const fields = concept.memorize.fields;
     
     console.log(chalk.cyan(`\nDescribe the following fields for ${chalk.bold(item)}:\n`));
     fields.forEach(field => {
       console.log(chalk.cyan(`  • ${field}`));
     });
+    
+    if (schedule.easeFactor !== this.INITIAL_EASE) {
+      const difficulty = schedule.easeFactor < 2 ? chalk.red('Difficult') : 
+                        schedule.easeFactor > 3 ? chalk.green('Easy') : 
+                        chalk.yellow('Medium');
+      console.log(chalk.gray(`\n[${difficulty}${chalk.gray(` card - Ease: ${schedule.easeFactor.toFixed(1)}]`)}`));
+    }
     console.log();
 
     const { answer } = await inquirer.prompt([{
@@ -84,22 +155,38 @@ export class MemorizationPhase {
       previousAttempts
     );
 
+    const newEase = this.updateEaseFactor(evaluation.comprehension, schedule.easeFactor);
+    const newInterval = this.calculateInterval(evaluation.comprehension, newEase);
+    
+    schedule.easeFactor = newEase;
+    schedule.interval = newInterval;
+    schedule.duePosition = this.positionCounter + newInterval;
+
     if (evaluation.comprehension >= 4) {
       console.log(chalk.green(`\n✅ ${evaluation.response}\n`));
       
-      const currentSuccesses = itemPool.get(item) || 0;
-      const newSuccesses = currentSuccesses + 1;
+      schedule.successCount++;
       
-      if (newSuccesses >= 2) {
-        itemPool.delete(item);
+      if (schedule.successCount >= 2) {
+        const index = scheduleQueue.indexOf(schedule);
+        if (index > -1) {
+          scheduleQueue.splice(index, 1);
+        }
         console.log(chalk.bold.green(`🎯 "${item}" mastered!`));
       } else {
-        itemPool.set(item, newSuccesses);
         console.log(chalk.yellow(`Good! One more correct answer needed for "${item}".`));
+        console.log(chalk.gray(`Will review after ${newInterval} more card${newInterval > 1 ? 's' : ''}.`));
       }
     } else {
       console.log(chalk.yellow(`\n📝 ${evaluation.response}\n`));
-      console.log(chalk.gray('Let\'s try this one again later.'));
+      
+      if (evaluation.comprehension <= 1) {
+        console.log(chalk.red('This card needs immediate review.'));
+      } else {
+        console.log(chalk.gray(`Will review after ${newInterval} more card${newInterval > 1 ? 's' : ''}.`));
+      }
+      
+      schedule.successCount = 0;
     }
 
     await this.courseManager.updateItemProgress(
@@ -112,25 +199,81 @@ export class MemorizationPhase {
         aiResponse: evaluation
       }
     );
+
+    if (!this.itemsCovered.includes(item)) {
+      this.itemsCovered.push(item);
+    }
+
+    return evaluation;
   }
 
-  private async askAbstractQuestion(
+  private async determineSpecialQuestion(
+    comprehension: number,
+    currentItem: string,
+    concept: Concept,
+    session: LearningSession
+  ): Promise<'elaboration' | 'connection' | 'high-level' | null> {
+    const random = Math.random();
+    
+    if (comprehension <= 2) {
+      if (random < 0.4) return 'elaboration';
+      if (random < 0.6) return 'high-level';
+    } else if (comprehension === 5) {
+      const strugglingItems = this.courseManager.getStrugglingItems(session, concept.name);
+      if (strugglingItems.length > 0 && random < 0.3) return 'connection';
+      if (random < 0.5) return 'high-level';
+    } else {
+      if (random < 0.2) return 'high-level';
+    }
+    
+    return null;
+  }
+
+  private async askSpecialQuestion(
+    type: 'elaboration' | 'connection' | 'high-level',
+    currentItem: string,
     concept: Concept,
     course: Course,
-    session: LearningSession
+    session: LearningSession,
+    lastComprehension: number
   ): Promise<void> {
-    console.log(chalk.magenta('\n💭 Let\'s think about connections...\n'));
+    let question: string;
+    let questionData: any = { type, timestamp: new Date() };
 
-    const conceptProgress = session.conceptsProgress.get(concept.name);
-    const previousQuestions = conceptProgress?.abstractQuestionsAsked.map(q => q.question) || [];
+    if (type === 'elaboration') {
+      console.log(chalk.yellow('\n🤔 Let\'s understand why...\n'));
+      question = await this.ai.generateElaborationQuestion(
+        currentItem,
+        concept.memorize.fields,
+        concept
+      );
+      questionData.targetItem = currentItem;
+    } else if (type === 'connection') {
+      console.log(chalk.cyan('\n🔗 Let\'s make connections...\n'));
+      const strugglingItems = this.courseManager.getStrugglingItems(session, concept.name);
+      const strugglingItem = strugglingItems[0]?.item;
+      
+      if (!strugglingItem) {
+        return;
+      }
+      
+      question = await this.ai.generateConnectionToStruggling(
+        currentItem,
+        strugglingItem,
+        concept
+      );
+      questionData.targetItem = strugglingItem;
+      questionData.connectedItem = currentItem;
+    } else {
+      console.log(chalk.magenta('\n💭 Let\'s see the bigger picture...\n'));
+      question = await this.ai.generateHighLevelRecall(
+        concept,
+        this.itemsCovered
+      );
+    }
 
-    const question = await this.ai.generateAbstractQuestion(
-      concept,
-      course.concepts,
-      previousQuestions
-    );
-
-    console.log(chalk.magenta(question + '\n'));
+    console.log(chalk.bold(question + '\n'));
+    questionData.question = question;
 
     const { answer } = await inquirer.prompt([{
       type: 'input',
@@ -139,20 +282,39 @@ export class MemorizationPhase {
       validate: (input) => input.length > 0 || 'Please share your thoughts'
     }]);
 
-    const feedback = await this.ai.evaluateAbstractAnswer(
-      question,
-      answer,
-      concept,
-      course.concepts
-    );
+    questionData.answer = answer;
+
+    let feedback: string;
+    if (type === 'elaboration') {
+      feedback = await this.ai.evaluateElaborationAnswer(
+        question,
+        answer,
+        currentItem,
+        concept
+      );
+    } else if (type === 'connection') {
+      feedback = await this.ai.evaluateConnectionQuestionAnswer(
+        question,
+        answer,
+        currentItem,
+        questionData.targetItem,
+        concept
+      );
+    } else {
+      feedback = await this.ai.evaluateHighLevelAnswer(
+        question,
+        answer,
+        concept,
+        this.itemsCovered
+      );
+    }
 
     console.log(chalk.blue(`\n${feedback}\n`));
 
-    await this.courseManager.addAbstractQuestion(
+    await this.courseManager.addSpecialQuestion(
       session,
       concept.name,
-      question,
-      answer
+      questionData
     );
 
     const { ready } = await inquirer.prompt([{

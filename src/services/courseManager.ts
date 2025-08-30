@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { Course, LearningSession, ConceptProgress, ItemProgress, TopicProgress, ConceptAttempt } from '../types/course.js';
+import { Course, LearningSession, ConceptProgress, ItemProgress, TopicProgress, ConceptAttempt, SpecialQuestion } from '../types/course.js';
 
 export class CourseManager {
   private coursesDir = path.join(process.cwd(), 'courses');
@@ -156,7 +156,8 @@ export class CourseManager {
         conceptName,
         itemsProgress: new Map(),
         topicProgress: new Map(),
-        abstractQuestionsAsked: []
+        abstractQuestionsAsked: [],
+        specialQuestionsAsked: []
       });
     }
 
@@ -195,7 +196,8 @@ export class CourseManager {
         conceptName,
         itemsProgress: new Map(),
         topicProgress: new Map(),
-        abstractQuestionsAsked: []
+        abstractQuestionsAsked: [],
+        specialQuestionsAsked: []
       });
     }
 
@@ -242,7 +244,8 @@ export class CourseManager {
         conceptName,
         itemsProgress: new Map(),
         topicProgress: new Map(),
-        abstractQuestionsAsked: []
+        abstractQuestionsAsked: [],
+        specialQuestionsAsked: []
       });
     }
 
@@ -299,5 +302,89 @@ export class CourseManager {
     });
     
     return result;
+  }
+
+  async addSpecialQuestion(
+    session: LearningSession,
+    conceptName: string,
+    question: SpecialQuestion
+  ): Promise<void> {
+    const conceptProgress = session.conceptsProgress.get(conceptName);
+    if (!conceptProgress) {
+      throw new Error(`Concept ${conceptName} not found in session`);
+    }
+
+    if (!conceptProgress.specialQuestionsAsked) {
+      conceptProgress.specialQuestionsAsked = [];
+    }
+
+    conceptProgress.specialQuestionsAsked.push(question);
+    await this.saveSession(session);
+  }
+
+  getStrugglingItems(
+    session: LearningSession,
+    conceptName: string,
+    threshold: number = 2
+  ): Array<{ item: string; averageComprehension: number }> {
+    const conceptProgress = session.conceptsProgress.get(conceptName);
+    if (!conceptProgress) return [];
+
+    const strugglingItems: Array<{ item: string; averageComprehension: number }> = [];
+
+    conceptProgress.itemsProgress.forEach((progress, item) => {
+      if (progress.attempts.length > 0) {
+        const avgComprehension = progress.attempts.reduce(
+          (sum, attempt) => sum + attempt.aiResponse.comprehension,
+          0
+        ) / progress.attempts.length;
+
+        if (avgComprehension <= threshold) {
+          strugglingItems.push({ item, averageComprehension: avgComprehension });
+        }
+      }
+    });
+
+    return strugglingItems.sort((a, b) => a.averageComprehension - b.averageComprehension);
+  }
+
+  getWellPerformingItems(
+    session: LearningSession,
+    conceptName: string,
+    threshold: number = 4
+  ): Array<{ item: string; averageComprehension: number }> {
+    const conceptProgress = session.conceptsProgress.get(conceptName);
+    if (!conceptProgress) return [];
+
+    const performingItems: Array<{ item: string; averageComprehension: number }> = [];
+
+    conceptProgress.itemsProgress.forEach((progress, item) => {
+      if (progress.attempts.length > 0) {
+        const avgComprehension = progress.attempts.reduce(
+          (sum, attempt) => sum + attempt.aiResponse.comprehension,
+          0
+        ) / progress.attempts.length;
+
+        if (avgComprehension >= threshold) {
+          performingItems.push({ item, averageComprehension: avgComprehension });
+        }
+      }
+    });
+
+    return performingItems.sort((a, b) => b.averageComprehension - a.averageComprehension);
+  }
+
+  getLastAttemptComprehension(
+    session: LearningSession,
+    conceptName: string,
+    item: string
+  ): number | null {
+    const conceptProgress = session.conceptsProgress.get(conceptName);
+    if (!conceptProgress) return null;
+
+    const itemProgress = conceptProgress.itemsProgress.get(item);
+    if (!itemProgress || itemProgress.attempts.length === 0) return null;
+
+    return itemProgress.attempts[itemProgress.attempts.length - 1].aiResponse.comprehension;
   }
 }

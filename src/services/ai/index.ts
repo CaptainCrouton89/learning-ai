@@ -172,6 +172,84 @@ export class AIService {
       course
     );
   }
+
+  async generateElaborationQuestion(
+    item: string,
+    fields: string[],
+    concept: Concept
+  ): Promise<string> {
+    return this.generationService.generateElaborationQuestion(
+      item,
+      fields,
+      concept
+    );
+  }
+
+  async generateConnectionToStruggling(
+    performingItem: string,
+    strugglingItem: string,
+    concept: Concept
+  ): Promise<string> {
+    return this.generationService.generateConnectionToStruggling(
+      performingItem,
+      strugglingItem,
+      concept
+    );
+  }
+
+  async generateHighLevelRecall(
+    concept: Concept,
+    itemsCovered: string[]
+  ): Promise<string> {
+    return this.generationService.generateHighLevelRecall(
+      concept,
+      itemsCovered
+    );
+  }
+
+  async evaluateElaborationAnswer(
+    question: string,
+    userAnswer: string,
+    item: string,
+    concept: Concept
+  ): Promise<string> {
+    return this.evaluationService.evaluateElaborationAnswer(
+      question,
+      userAnswer,
+      item,
+      concept
+    );
+  }
+
+  async evaluateConnectionQuestionAnswer(
+    question: string,
+    userAnswer: string,
+    performingItem: string,
+    strugglingItem: string,
+    concept: Concept
+  ): Promise<string> {
+    return this.evaluationService.evaluateConnectionQuestionAnswer(
+      question,
+      userAnswer,
+      performingItem,
+      strugglingItem,
+      concept
+    );
+  }
+
+  async evaluateHighLevelAnswer(
+    question: string,
+    userAnswer: string,
+    concept: Concept,
+    itemsCovered: string[]
+  ): Promise<string> {
+    return this.evaluationService.evaluateHighLevelAnswer(
+      question,
+      userAnswer,
+      concept,
+      itemsCovered
+    );
+  }
 }
 
 export * from "./schemas.js";

@@ -48,6 +48,15 @@ export interface TopicProgress {
   attempts: ConceptAttempt[];
 }
 
+export interface SpecialQuestion {
+  type: 'elaboration' | 'connection' | 'high-level';
+  question: string;
+  answer: string;
+  targetItem?: string;
+  connectedItem?: string;
+  timestamp: Date;
+}
+
 export interface ConceptProgress {
   conceptName: string;
   itemsProgress: Map<string, ItemProgress>;
@@ -57,6 +66,15 @@ export interface ConceptProgress {
     answer: string;
     timestamp: Date;
   }>;
+  specialQuestionsAsked: Array<SpecialQuestion>;
+}
+
+export interface FlashcardSchedule {
+  item: string;
+  easeFactor: number;
+  interval: number;
+  duePosition: number;
+  successCount: number;
 }
 
 export interface LearningSession {
