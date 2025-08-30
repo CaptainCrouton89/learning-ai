@@ -31,9 +31,27 @@ export interface ItemProgress {
   successCount: number;
 }
 
+export interface ConceptAttempt {
+  question: string;
+  userAnswer: string;
+  aiResponse: {
+    comprehension: number;
+    response: string;
+    targetTopic: string;
+  };
+  timestamp: Date;
+}
+
+export interface TopicProgress {
+  topicName: string;
+  currentComprehension: number;
+  attempts: ConceptAttempt[];
+}
+
 export interface ConceptProgress {
   conceptName: string;
   itemsProgress: Map<string, ItemProgress>;
+  topicProgress: Map<string, TopicProgress>;
   abstractQuestionsAsked: Array<{
     question: string;
     answer: string;

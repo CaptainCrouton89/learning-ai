@@ -2,13 +2,11 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { AIService } from '../services/ai.js';
 import { CourseManager } from '../services/courseManager.js';
-import { Course, Concept, LearningSession } from '../types/course.js';
+import { Course, Concept, LearningSession, ConceptAttempt } from '../types/course.js';
 
 export class ConceptLearningPhase {
   private ai = new AIService();
   private courseManager = new CourseManager();
-  private questionCount = 0;
-  private maxQuestionsPerConcept = 15;
 
   async start(course: Course, session: LearningSession): Promise<void> {
     console.log(chalk.blue('\n🎯 Time to dive into specific concepts!\n'));
@@ -48,14 +46,23 @@ export class ConceptLearningPhase {
     session: LearningSession
   ): Promise<void> {
     console.log(chalk.yellow(`\n📚 Learning: ${concept.name}\n`));
-    console.log(chalk.gray('Topics we\'ll cover:'));
+    console.log(chalk.gray('Topics we\'ll master:'));
     concept['high-level'].forEach(topic => {
       console.log(chalk.gray(`  • ${topic}`));
     });
     console.log();
 
     await this.courseManager.updateSessionPhase(session, 'concept-learning', concept.name);
-    this.questionCount = 0;
+    
+    // Track which topics are mastered
+    let unmasteredTopics = this.courseManager.getUnmasteredTopics(
+      session,
+      concept.name,
+      concept['high-level']
+    );
+
+    // Show initial progress
+    this.displayTopicProgress(session, concept);
 
     // Generate the first question to start the conversation
     const firstQuestion = await this.ai.generateConceptQuestion(
@@ -65,7 +72,10 @@ export class ConceptLearningPhase {
     console.log(chalk.cyan(`\n${firstQuestion}\n`));
     await this.courseManager.addConversationEntry(session, 'assistant', firstQuestion);
 
-    while (this.questionCount < this.maxQuestionsPerConcept) {
+    let questionCount = 0;
+    
+    // Continue until all topics are mastered
+    while (unmasteredTopics.length > 0) {
       const { answer } = await inquirer.prompt([{
         type: 'input',
         name: 'answer',
@@ -75,35 +85,69 @@ export class ConceptLearningPhase {
 
       await this.courseManager.addConversationEntry(session, 'user', answer);
 
-      // Get feedback and next question in one AI call (except for last iteration)
-      const isLastQuestion = this.questionCount === this.maxQuestionsPerConcept - 1;
-      const feedbackWithFollowUp = await this.ai.evaluateConceptAnswer(
+      // Get feedback with comprehension score
+      const evaluation = await this.ai.evaluateConceptAnswer(
         answer,
         concept,
         session.conversationHistory.slice(-10),
-        !isLastQuestion // Include follow-up question unless it's the last one
+        true, // Always include follow-up while topics remain unmastered
+        unmasteredTopics
       );
 
-      console.log(chalk.green(`\n${feedbackWithFollowUp}\n`));
-      await this.courseManager.addConversationEntry(session, 'assistant', feedbackWithFollowUp);
+      // Create attempt record
+      const attempt: ConceptAttempt = {
+        question: session.conversationHistory[session.conversationHistory.length - 2].content,
+        userAnswer: answer,
+        aiResponse: evaluation,
+        timestamp: new Date()
+      };
 
-      this.questionCount++;
+      // Update topic progress
+      await this.courseManager.updateConceptTopicProgress(session, concept.name, attempt);
 
-      if (this.questionCount % 5 === 0 && this.questionCount < this.maxQuestionsPerConcept) {
-        const { continueQuestions } = await inquirer.prompt([{
-          type: 'confirm',
-          name: 'continueQuestions',
-          message: `Continue exploring "${concept.name}"?`,
-          default: true
-        }]);
+      // Display feedback with comprehension score
+      console.log(chalk.green(`\n${evaluation.response}\n`));
+      console.log(chalk.cyan(`Comprehension for "${evaluation.targetTopic}": ${evaluation.comprehension}/5`));
+      
+      await this.courseManager.addConversationEntry(session, 'assistant', evaluation.response);
 
-        if (!continueQuestions) {
-          break;
+      // Update unmastered topics list
+      unmasteredTopics = this.courseManager.getUnmasteredTopics(
+        session,
+        concept.name,
+        concept['high-level']
+      );
+
+      questionCount++;
+
+      // Show progress every 3 questions
+      if (questionCount % 3 === 0) {
+        this.displayTopicProgress(session, concept);
+        
+        if (unmasteredTopics.length > 0) {
+          const { continueQuestions } = await inquirer.prompt([{
+            type: 'confirm',
+            name: 'continueQuestions',
+            message: `Continue working on the remaining topics for "${concept.name}"?`,
+            default: true
+          }]);
+
+          if (!continueQuestions) {
+            console.log(chalk.yellow('\nStopping early. You can resume to complete the remaining topics.'));
+            break;
+          }
         }
       }
     }
 
-    console.log(chalk.yellow(`\n✅ Great work on "${concept.name}"!\n`));
+    if (unmasteredTopics.length === 0) {
+      console.log(chalk.yellow(`\n✅ Excellent! You've mastered all topics in "${concept.name}"!\n`));
+      this.displayTopicProgress(session, concept);
+    } else {
+      console.log(chalk.yellow(`\n📝 Good progress on "${concept.name}".\n`));
+      console.log(chalk.gray(`Topics still to master: ${unmasteredTopics.join(', ')}\n`));
+    }
+    
     console.log(chalk.gray('Now let\'s practice with flashcards to solidify your knowledge.\n'));
 
     const { readyForFlashcards } = await inquirer.prompt([{
@@ -118,5 +162,27 @@ export class ConceptLearningPhase {
       const memorizationPhase = new MemorizationPhase();
       await memorizationPhase.start(concept, course, session);
     }
+  }
+
+  private displayTopicProgress(session: LearningSession, concept: Concept): void {
+    console.log(chalk.blue('\n📊 Topic Progress:'));
+    const comprehensionMap = this.courseManager.getAllTopicsComprehension(
+      session,
+      concept.name,
+      concept['high-level']
+    );
+    
+    comprehensionMap.forEach((comprehension, topic) => {
+      const progressBar = this.getProgressBar(comprehension);
+      const status = comprehension >= 5 ? chalk.green('✓') : chalk.yellow('○');
+      console.log(`  ${status} ${topic}: ${progressBar} (${comprehension}/5)`);
+    });
+    console.log();
+  }
+
+  private getProgressBar(comprehension: number): string {
+    const filled = '█'.repeat(comprehension);
+    const empty = '░'.repeat(5 - comprehension);
+    return chalk.cyan(filled) + chalk.gray(empty);
   }
 }

@@ -8,6 +8,12 @@ const FlashcardResponseSchema = z.object({
   response: z.string(),
 });
 
+const ConceptAnswerEvaluationSchema = z.object({
+  comprehension: z.number().min(0).max(5),
+  response: z.string(),
+  targetTopic: z.string().describe("The specific high-level topic this Q&A addressed"),
+});
+
 const CourseGenerationSchema = z.object({
   name: z.string(),
   concepts: z.array(
@@ -19,11 +25,25 @@ const CourseGenerationSchema = z.object({
 });
 
 const ConceptDetailSchema = z.object({
-  "high-level": z.array(z.string()).describe("List of high-level topics to understand about this concept"),
-  memorize: z.object({
-    fields: z.array(z.string()).describe("Column headers for the flashcard table (e.g., 'Term', 'Definition', 'Example')"),
-    items: z.array(z.string()).describe("List of item names/terms to memorize (e.g., 'Photosynthesis', 'Mitosis'). Just the names, not the full data"),
-  }).describe("Flashcard structure with field headers and item names to memorize"),
+  "high-level": z
+    .array(z.string())
+    .describe("List of high-level topics to understand about this concept"),
+  memorize: z
+    .object({
+      fields: z
+        .array(z.string())
+        .describe(
+          "Column headers for the flashcard table (e.g., 'Term', 'Definition', 'Example')"
+        ),
+      items: z
+        .array(z.string())
+        .describe(
+          "List of item names/terms to memorize (e.g., 'Photosynthesis', 'Mitosis'). Just the names, not the full data"
+        ),
+    })
+    .describe(
+      "Flashcard structure with field headers and item names to memorize"
+    ),
 });
 
 export class AIService {
@@ -85,7 +105,7 @@ export class AIService {
     const { text } = await generateText({
       model: this.model,
       system: `<role>
-You are facilitating foundational understanding of "${course.name}".
+You are a brilliant teacher facilitating foundational understanding of "${course.name}".
 </role>
 
 <approach>
@@ -94,12 +114,27 @@ You are facilitating foundational understanding of "${course.name}".
 - Build from fundamental principles
 - Connect to real-world relevance
 - One clear question at a time
-</approach>`,
+</approach>
+
+<desired_behavior>
+- ALWAYS include a question about the material in your response. 
+- NEVER ask the user questions about what they want to talk about or learn—it distracts them from the material.
+- ALWAYS be curious about the user's thoughts
+</desired_behavior>`,
       prompt: `<context>
-${conversationHistory.length > 0 ? `Previous discussion:\n${conversationHistory.slice(-4).map(entry => `${entry.role}: ${entry.content}`).join("\n\n")}` : 'Starting the conversation.'}
+${
+  conversationHistory.length > 0
+    ? `Previous discussion:\n${conversationHistory
+        .slice(-4)
+        .map((entry) => `${entry.role}: ${entry.content}`)
+        .join("\n\n")}`
+    : "Starting the conversation."
+}
 </context>
 
-Ask a probing question about ${course.name} that explores foundational understanding.`,
+Ask a probing question about ${
+        course.name
+      } that explores foundational understanding.`,
     });
 
     return text;
@@ -131,22 +166,33 @@ You are guiding foundational understanding of "${course.name}".
 4. Make connections explicit rather than implied
 </guidelines>
 
-${includeFollowUp ? `<follow-up>
+${
+  includeFollowUp
+    ? `<follow-up>
 After addressing their response, ask a question that:
 - Builds directly on what they've said
 - Explores implications or applications
 - Challenges them to think deeper
-</follow-up>` : ''}`,
+</follow-up>`
+    : ""
+}`,
       prompt: `<user-response>
 ${userAnswer}
 </user-response>
 
 <context>
 Recent conversation:
-${conversationHistory.slice(-4).map(entry => `${entry.role}: ${entry.content}`).join("\n\n")}
+${conversationHistory
+  .slice(-4)
+  .map((entry) => `${entry.role}: ${entry.content}`)
+  .join("\n\n")}
 </context>
 
-${includeFollowUp ? 'Provide substantive feedback, then ask a follow-up question that builds on their understanding.' : 'Provide substantive feedback on their response.'}`,
+${
+  includeFollowUp
+    ? "Provide substantive feedback, then ask a follow-up question that builds on their understanding."
+    : "Provide substantive feedback on their response."
+}`,
     });
 
     return text;
@@ -163,7 +209,7 @@ You are an expert educator facilitating deep learning of "${concept.name}".
 </role>
 
 <key-topics>
-${concept["high-level"].map(topic => `• ${topic}`).join("\n")}
+${concept["high-level"].map((topic) => `• ${topic}`).join("\n")}
 </key-topics>
 
 <approach>
@@ -174,10 +220,19 @@ ${concept["high-level"].map(topic => `• ${topic}`).join("\n")}
 - Encourage critical thinking over recall
 </approach>`,
       prompt: `<context>
-${conversationHistory.length > 0 ? `Recent discussion:\n${conversationHistory.slice(-3).map(entry => `${entry.role}: ${entry.content}`).join("\n\n")}` : 'This is the beginning of our discussion.'}
+${
+  conversationHistory.length > 0
+    ? `Recent discussion:\n${conversationHistory
+        .slice(-3)
+        .map((entry) => `${entry.role}: ${entry.content}`)
+        .join("\n\n")}`
+    : "This is the beginning of our discussion."
+}
 </context>
 
-Generate a focused question or teaching point that explores a specific aspect of ${concept.name}.`,
+Generate a focused question or teaching point that explores a specific aspect of ${
+        concept.name
+      }.`,
     });
 
     return text;
@@ -187,12 +242,16 @@ Generate a focused question or teaching point that explores a specific aspect of
     userAnswer: string,
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
-    includeFollowUp: boolean = false
-  ): Promise<string> {
-    const { text } = await generateText({
+    includeFollowUp: boolean = false,
+    unmasteredTopics?: string[]
+  ): Promise<{ comprehension: number; response: string; targetTopic: string }> {
+    const { object } = await generateObject({
       model: this.model,
+      schema: ConceptAnswerEvaluationSchema,
       system: `<role>
-You are an expert educator teaching "${concept.name}" through substantive dialogue.
+You are an expert educator teaching "${
+        concept.name
+      }" through substantive dialogue.
 </role>
 
 <objectives>
@@ -200,11 +259,26 @@ You are an expert educator teaching "${concept.name}" through substantive dialog
 - Focus on content rather than evaluation
 - Use concrete examples and analogies when helpful
 - Build on what the learner knows to introduce new connections
+- Score comprehension 0-5 (5 = complete mastery of the topic)
 </objectives>
 
 <key-topics>
-${concept["high-level"].map(topic => `• ${topic}`).join("\n")}
+${concept["high-level"].map((topic) => `• ${topic}`).join("\n")}
 </key-topics>
+
+${unmasteredTopics && unmasteredTopics.length > 0 ? `<focus-topics>
+Focus your evaluation and follow-up on these topics that need more practice:
+${unmasteredTopics.map((topic) => `• ${topic}`).join("\n")}
+</focus-topics>` : ''}
+
+<scoring-criteria>
+- 0: No understanding or completely incorrect
+- 1: Major misconceptions, minimal understanding
+- 2: Some understanding but significant gaps
+- 3: Good understanding with minor gaps
+- 4: Strong understanding with only subtle nuances missing
+- 5: Complete mastery and deep understanding
+</scoring-criteria>
 
 <guidelines>
 1. Address factual accuracy directly if needed
@@ -213,27 +287,40 @@ ${concept["high-level"].map(topic => `• ${topic}`).join("\n")}
 4. Introduce one new insight or perspective
 5. Avoid phrases like "great job", "you're on the right track", or "that's correct"
 6. Skip meta-commentary about the learner's progress or understanding level
+7. Identify which specific topic from the key-topics list this Q&A addressed
 </guidelines>
 
-${includeFollowUp ? `<follow-up>
+${
+  includeFollowUp
+    ? `<follow-up>
 After addressing their response, pose a question that:
+- Targets topics with lower comprehension scores
 - Explores a specific aspect they haven't mentioned
 - Challenges them to apply the concept differently
 - Connects to a related idea naturally
-</follow-up>` : ''}`,
+</follow-up>`
+    : ""
+}`,
       prompt: `<user-response>
 ${userAnswer}
 </user-response>
 
 <context>
 Recent conversation:
-${conversationHistory.slice(-4).map(entry => `${entry.role}: ${entry.content}`).join("\n\n")}
+${conversationHistory
+  .slice(-4)
+  .map((entry) => `${entry.role}: ${entry.content}`)
+  .join("\n\n")}
 </context>
 
-${includeFollowUp ? 'Provide substantive feedback that advances their understanding, then ask a specific follow-up question.' : 'Provide substantive feedback that advances their understanding.'}`,
+${
+  includeFollowUp
+    ? "Provide substantive feedback that advances their understanding, then ask a specific follow-up question. Score their comprehension and identify the topic addressed."
+    : "Provide substantive feedback that advances their understanding. Score their comprehension and identify the topic addressed."
+}`,
     });
 
-    return text;
+    return object;
   }
 
   async evaluateFlashcardAnswer(

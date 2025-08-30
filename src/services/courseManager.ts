@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { Course, LearningSession, ConceptProgress, ItemProgress } from '../types/course.js';
+import { Course, LearningSession, ConceptProgress, ItemProgress, TopicProgress, ConceptAttempt } from '../types/course.js';
 
 export class CourseManager {
   private coursesDir = path.join(process.cwd(), 'courses');
@@ -60,6 +60,10 @@ export class CourseManager {
           itemsProgress: Array.from(value.itemsProgress.entries()).map(([itemKey, itemValue]) => ({
             key: itemKey,
             value: itemValue
+          })),
+          topicProgress: Array.from(value.topicProgress.entries()).map(([topicKey, topicValue]) => ({
+            key: topicKey,
+            value: topicValue
           }))
         }
       }))
@@ -83,9 +87,18 @@ export class CourseManager {
               itemsProgress.set(itemEntry.key, itemEntry.value);
             });
           }
+          
+          const topicProgress = new Map<string, TopicProgress>();
+          if (entry.value.topicProgress) {
+            entry.value.topicProgress.forEach((topicEntry: any) => {
+              topicProgress.set(topicEntry.key, topicEntry.value);
+            });
+          }
+          
           conceptsProgress.set(entry.key, {
             ...entry.value,
-            itemsProgress
+            itemsProgress,
+            topicProgress
           });
         });
       }
@@ -142,6 +155,7 @@ export class CourseManager {
       session.conceptsProgress.set(conceptName, {
         conceptName,
         itemsProgress: new Map(),
+        topicProgress: new Map(),
         abstractQuestionsAsked: []
       });
     }
@@ -180,6 +194,7 @@ export class CourseManager {
       session.conceptsProgress.set(conceptName, {
         conceptName,
         itemsProgress: new Map(),
+        topicProgress: new Map(),
         abstractQuestionsAsked: []
       });
     }
@@ -215,5 +230,74 @@ export class CourseManager {
     });
 
     return unmasteredItems;
+  }
+
+  async updateConceptTopicProgress(
+    session: LearningSession,
+    conceptName: string,
+    attempt: ConceptAttempt
+  ): Promise<void> {
+    if (!session.conceptsProgress.has(conceptName)) {
+      session.conceptsProgress.set(conceptName, {
+        conceptName,
+        itemsProgress: new Map(),
+        topicProgress: new Map(),
+        abstractQuestionsAsked: []
+      });
+    }
+
+    const conceptProgress = session.conceptsProgress.get(conceptName)!;
+    const topicName = attempt.aiResponse.targetTopic;
+    
+    if (!conceptProgress.topicProgress.has(topicName)) {
+      conceptProgress.topicProgress.set(topicName, {
+        topicName,
+        currentComprehension: 0,
+        attempts: []
+      });
+    }
+
+    const topicProgress = conceptProgress.topicProgress.get(topicName)!;
+    topicProgress.attempts.push(attempt);
+    topicProgress.currentComprehension = Math.max(
+      topicProgress.currentComprehension,
+      attempt.aiResponse.comprehension
+    );
+
+    session.lastActivityTime = new Date();
+    await this.saveSession(session);
+  }
+
+  isTopicMastered(session: LearningSession, conceptName: string, topicName: string): boolean {
+    const conceptProgress = session.conceptsProgress.get(conceptName);
+    if (!conceptProgress) return false;
+
+    const topicProgress = conceptProgress.topicProgress.get(topicName);
+    return topicProgress ? topicProgress.currentComprehension >= 5 : false;
+  }
+
+  getUnmasteredTopics(session: LearningSession, conceptName: string, allTopics: string[]): string[] {
+    const conceptProgress = session.conceptsProgress.get(conceptName);
+    if (!conceptProgress) return allTopics;
+
+    return allTopics.filter(topic => {
+      const topicProgress = conceptProgress.topicProgress.get(topic);
+      return !topicProgress || topicProgress.currentComprehension < 5;
+    });
+  }
+
+  getAllTopicsComprehension(session: LearningSession, conceptName: string, allTopics: string[]): Map<string, number> {
+    const result = new Map<string, number>();
+    const conceptProgress = session.conceptsProgress.get(conceptName);
+    
+    allTopics.forEach(topic => {
+      if (conceptProgress?.topicProgress.has(topic)) {
+        result.set(topic, conceptProgress.topicProgress.get(topic)!.currentComprehension);
+      } else {
+        result.set(topic, 0);
+      }
+    });
+    
+    return result;
   }
 }
