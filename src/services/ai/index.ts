@@ -1,7 +1,7 @@
-import { Course, Concept } from "../../types/course.js";
+import { Concept, Course } from "../../types/course.js";
 import { CourseService } from "./courseService.js";
-import { GenerationService } from "./generationService.js";
 import { EvaluationService } from "./evaluationService.js";
+import { GenerationService } from "./generationService.js";
 
 export class AIService {
   private courseService = new CourseService();
@@ -37,14 +37,15 @@ export class AIService {
   async generateHighLevelResponse(
     userAnswer: string,
     course: Course,
-    conversationHistory: Array<{ role: string; content: string }>,
-    includeFollowUp: boolean = false
-  ): Promise<{ response: string; comprehensionUpdates: Array<{ topic: string; comprehension: number }> }> {
+    conversationHistory: Array<{ role: string; content: string }>
+  ): Promise<{
+    response: string;
+    comprehensionUpdates: Array<{ topic: string; comprehension: number }>;
+  }> {
     return this.evaluationService.generateHighLevelResponse(
       userAnswer,
       course,
-      conversationHistory,
-      includeFollowUp
+      conversationHistory
     );
   }
 
@@ -63,14 +64,12 @@ export class AIService {
   async evaluateHighLevelAnswer(
     userAnswer: string,
     course: Course,
-    conversationHistory: Array<{ role: string; content: string }>,
-    includeFollowUp: boolean = false
+    conversationHistory: Array<{ role: string; content: string }>
   ): Promise<{ comprehension: number; response: string; targetTopic: string }> {
     return this.evaluationService.evaluateHighLevelAnswer(
       userAnswer,
       course,
-      conversationHistory,
-      includeFollowUp
+      conversationHistory
     );
   }
 
@@ -88,14 +87,15 @@ export class AIService {
     userAnswer: string,
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
-    includeFollowUp: boolean = false,
     unmasteredTopics?: string[]
-  ): Promise<{ response: string; comprehensionUpdates: Array<{ topic: string; comprehension: number }> }> {
+  ): Promise<{
+    response: string;
+    comprehensionUpdates: Array<{ topic: string; comprehension: number }>;
+  }> {
     return this.evaluationService.generateConceptResponse(
       userAnswer,
       concept,
       conversationHistory,
-      includeFollowUp,
       unmasteredTopics
     );
   }
@@ -116,14 +116,12 @@ export class AIService {
     userAnswer: string,
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
-    includeFollowUp: boolean = false,
     unmasteredTopics?: string[]
   ): Promise<{ comprehension: number; response: string; targetTopic: string }> {
     return this.evaluationService.evaluateConceptAnswer(
       userAnswer,
       concept,
       conversationHistory,
-      includeFollowUp,
       unmasteredTopics
     );
   }

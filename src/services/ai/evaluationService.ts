@@ -15,8 +15,7 @@ export class EvaluationService {
   async generateHighLevelResponse(
     userAnswer: string,
     course: Course,
-    conversationHistory: Array<{ role: string; content: string }>,
-    includeFollowUp: boolean = false
+    conversationHistory: Array<{ role: string; content: string }>
   ): Promise<{
     response: string;
     comprehensionUpdates: Array<{ topic: string; comprehension: number }>;
@@ -31,8 +30,7 @@ export class EvaluationService {
       model: this.model,
       system: `${highLevelPrompts.evaluationSystem(
         course.name,
-        conceptNames,
-        includeFollowUp
+        conceptNames
       )}
 
 You must follow these steps in order:
@@ -41,11 +39,7 @@ You must follow these steps in order:
    - 2-3: Partial understanding  
    - 4-5: Good to excellent understanding
 2. After updating all relevant comprehension scores, provide substantive feedback on their response.
-${
-  includeFollowUp
-    ? "3. End with a follow-up question that builds on their understanding. The follow-up question is REQUIRED."
-    : ""
-}`,
+3. End with a follow-up question that builds on their understanding. The follow-up question is REQUIRED.`,
       prompt: `<user-response>
 ${userAnswer}
 </user-response>
@@ -58,9 +52,7 @@ ${conversationHistory
   .join("\n\n")}
 </context>
 
-Evaluate comprehension, then provide feedback${
-        includeFollowUp ? " and ask a follow-up question" : ""
-      }.`,
+Evaluate comprehension, then provide feedback and ask a follow-up question.`,
       tools: {
         update_comprehension: tool({
           description:
@@ -137,8 +129,7 @@ Analyze which topics the user addressed and their level of understanding for eac
   async evaluateHighLevelAnswer(
     userAnswer: string,
     course: Course,
-    conversationHistory: Array<{ role: string; content: string }>,
-    includeFollowUp: boolean = false
+    conversationHistory: Array<{ role: string; content: string }>
   ): Promise<{ comprehension: number; response: string; targetTopic: string }> {
     const conceptNames = course.concepts.map((c) => c.name);
     const { object } = await generateObject({
@@ -146,8 +137,7 @@ Analyze which topics the user addressed and their level of understanding for eac
       schema: ConceptAnswerEvaluationSchema(conceptNames),
       system: highLevelPrompts.evaluationSystem(
         course.name,
-        conceptNames,
-        includeFollowUp
+        conceptNames
       ),
       prompt: `<user-response>
 ${userAnswer}
@@ -161,11 +151,7 @@ ${conversationHistory
   .join("\n\n")}
 </context>
 
-${
-  includeFollowUp
-    ? "Provide substantive feedback, then ask a follow-up question that builds on their understanding. Score their comprehension and identify the topic addressed."
-    : "Provide substantive feedback on their response. Score their comprehension and identify the topic addressed."
-}`,
+Provide substantive feedback, then ask a follow-up question that builds on their understanding. Score their comprehension and identify the topic addressed.`,
     });
 
     return object;
@@ -175,7 +161,6 @@ ${
     userAnswer: string,
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
-    includeFollowUp: boolean = false,
     unmasteredTopics?: string[]
   ): Promise<{
     response: string;
@@ -192,8 +177,7 @@ ${
       system: `${conceptLearningPrompts.evaluationSystem(
         concept.name,
         highLevelTopics,
-        unmasteredTopics,
-        includeFollowUp
+        unmasteredTopics
       )}
 
 IMPORTANT: Before providing your response, you MUST first call the update_comprehension tool for EACH topic that the user addressed in their response. Score their understanding of each topic from 0-5:
@@ -214,11 +198,7 @@ ${conversationHistory
   .join("\n\n")}
 </context>
 
-First, evaluate and update comprehension for each topic addressed. Then ${
-        includeFollowUp
-          ? "provide substantive feedback that advances their understanding, and ask a specific follow-up question."
-          : "provide substantive feedback that advances their understanding."
-      }`,
+First, evaluate and update comprehension for each topic addressed. Then provide substantive feedback that advances their understanding, and ask a specific follow-up question.`,
       tools: {
         update_comprehension: tool({
           description:
@@ -298,7 +278,6 @@ Analyze which topics the user addressed and their level of understanding for eac
     userAnswer: string,
     concept: Concept,
     conversationHistory: Array<{ role: string; content: string }>,
-    includeFollowUp: boolean = false,
     unmasteredTopics?: string[]
   ): Promise<{ comprehension: number; response: string; targetTopic: string }> {
     const highLevelTopics = concept["high-level"];
@@ -308,8 +287,7 @@ Analyze which topics the user addressed and their level of understanding for eac
       system: conceptLearningPrompts.evaluationSystem(
         concept.name,
         highLevelTopics,
-        unmasteredTopics,
-        includeFollowUp
+        unmasteredTopics
       ),
       prompt: `<user-response>
 ${userAnswer}
@@ -323,11 +301,7 @@ ${conversationHistory
   .join("\n\n")}
 </context>
 
-${
-  includeFollowUp
-    ? "Provide substantive feedback that advances their understanding, then ask a specific follow-up question. Score their comprehension and identify the topic addressed."
-    : "Provide substantive feedback that advances their understanding. Score their comprehension and identify the topic addressed."
-}`,
+Provide substantive feedback that advances their understanding, then ask a specific follow-up question. Score their comprehension and identify the topic addressed.`,
     });
 
     return object;

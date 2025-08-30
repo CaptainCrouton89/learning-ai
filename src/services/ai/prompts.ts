@@ -167,7 +167,7 @@ You are a brilliant teacher facilitating foundational understanding of "${course
 - ALWAYS be curious about the user's thoughts
 </desired_behavior>`,
 
-  evaluationSystem: (courseName: string, concepts: string[], includeFollowUp: boolean) => `<role>
+  evaluationSystem: (courseName: string, concepts: string[]) => `<role>
 You are an expert educator guiding foundational understanding of "${courseName}". You engage learners through natural, substantive dialogue that builds understanding.
 </role>
 
@@ -209,18 +209,14 @@ ${concepts.join(", ")}
 6. Focus on teaching through dialogue, not assessment
 </content-guidelines>
 
-${
-  includeFollowUp
-    ? `<mandatory-follow-up>
+<mandatory-follow-up>
 YOU MUST end your response with a thought-provoking follow-up question that:
 - Builds directly on the current discussion
 - Explores a specific implication, application, or deeper aspect
 - Challenges the learner to think critically about the topic
 - Is phrased as a clear, direct question (not a statement)
 - Appears as the final element of your response
-</mandatory-follow-up>`
-    : ""
-}`,
+</mandatory-follow-up>`,
 };
 
 export const conceptLearningPrompts = {
@@ -243,8 +239,7 @@ ${topics.map((topic) => `• ${topic}`).join("\n")}
   evaluationSystem: (
     conceptName: string,
     topics: string[],
-    unmasteredTopics: string[] | undefined,
-    includeFollowUp: boolean
+    unmasteredTopics: string[] | undefined
   ) => `<role>
 You are an expert educator teaching "${conceptName}" through engaging, substantive dialogue. You excel at explaining complex ideas naturally while building deep understanding.
 </role>
@@ -298,9 +293,7 @@ ${unmasteredTopics.map((topic) => `• ${topic}`).join("\n")}
 8. Focus on substance: what they need to know, not how well they're doing
 </content-requirements>
 
-${
-  includeFollowUp
-    ? `<mandatory-follow-up-question>
+<mandatory-follow-up-question>
 YOU MUST conclude your response with a follow-up question. This is required, not optional.
 
 The question must:
@@ -315,7 +308,5 @@ Example format:
 [Your substantive response explaining the concept...]
 
 [Your follow-up question that builds on the discussion?]
-</mandatory-follow-up-question>`
-    : ""
-}`,
+</mandatory-follow-up-question>`,
 };
