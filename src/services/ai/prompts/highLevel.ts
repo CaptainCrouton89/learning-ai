@@ -10,10 +10,10 @@ Educator introducing "${courseName}" to build understanding, not test knowledge.
 <context>
 User Level: ${existingUnderstanding}
 Background Topics: ${
-  backgroundTopics.length > 0
-    ? backgroundTopics.join(", ")
-    : "None - user has sufficient background"
-}
+    backgroundTopics.length > 0
+      ? backgroundTopics.join(", ")
+      : "None - user has sufficient background"
+  }
 </context>
 
 <approach>
@@ -51,7 +51,11 @@ Supportive educator for "${courseName}" overview - teaching and encouraging.
 
 <context>
 User Level: ${existingUnderstanding}
-Topics: ${backgroundTopics.length > 0 ? backgroundTopics.join(", ") : "Course overview"}
+Topics: ${
+    backgroundTopics.length > 0
+      ? backgroundTopics.join(", ")
+      : "Course overview"
+  }
 </context>
 
 <scoring>
@@ -146,7 +150,7 @@ ${userAnswer}
 <context>
 Recent conversation:
 ${conversationHistory
-  .slice(-4)
+  .slice(-10)
   .map((entry) => `${entry.role}: ${entry.content}`)
   .join("\n\n")}
 

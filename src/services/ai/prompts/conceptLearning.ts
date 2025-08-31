@@ -84,12 +84,12 @@ ${
 
 <response-templates>
 Score 5 (Excellent):
-**✓ Excellent!** {praise}
+**✓ Excellent!**
 **Advanced insight:** {edge case or deeper knowledge}
 **Next level:** {challenging follow-up question with response length guidance}
 
 Score 4 (Strong):
-**✓ Strong grasp!** {acknowledge correct}
+**✓ Strong grasp!** 
 **Key insight:** {add missing nuance}
 **Deepen:** {targeted question with response length guidance}
 
@@ -105,10 +105,10 @@ Score 0-1 (Minimal):
 **Verify:** {check understanding with response length guidance}
 
 "No idea" response:
-**Answer to your question:** {direct answer from conversation history}
-**Breaking it down:** {step-by-step of specific mechanism}
-**Key points:** {essential facts about what was asked}
-**Check understanding:** {follow-up question with response length guidance}
+{direct answer from conversation history}
+{step-by-step of specific mechanism}
+{essential facts about what was asked}
+{follow-up question with response length guidance}
 
 ALWAYS include response length guidance like:
 - "In a few words..."
@@ -162,7 +162,7 @@ ${userAnswer}
 
 <context>
 ${conversationHistory
-  .slice(-4)
+  .slice(-10)
   .map((entry) => `${entry.role}: ${entry.content}`)
   .join("\n\n")}
 </context>

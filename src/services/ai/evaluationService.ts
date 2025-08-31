@@ -68,12 +68,14 @@ export class EvaluationService {
     }> = [
       {
         role: "system",
-        content: highLevelPrompts.evaluationSystemExtended(
-          course.name,
-          topicsToTeach,
-          existingUnderstanding,
-          progressSummary
-        ) + "\n\nREMEMBER: Always include response length guidance in your follow-up questions (e.g., 'In 2-3 sentences...', 'In a paragraph...', 'In a few words...').",
+        content:
+          highLevelPrompts.evaluationSystemExtended(
+            course.name,
+            topicsToTeach,
+            existingUnderstanding,
+            progressSummary
+          ) +
+          "\n\nREMEMBER: Always include response length guidance in your follow-up questions (e.g., 'In 2-3 sentences...', 'In a paragraph...', 'In a few words...').",
       },
     ];
 
@@ -148,12 +150,14 @@ export class EvaluationService {
     }> = [
       {
         role: "system",
-        content: conceptLearningPrompts.evaluationSystemExtended(
-          concept.name,
-          highLevelTopics,
-          unmasteredTopics,
-          existingUnderstanding
-        ) + "\n\nREMEMBER: Always include response length guidance in your follow-up questions (e.g., 'In 2-3 sentences...', 'In a paragraph...', 'In a few words...').",
+        content:
+          conceptLearningPrompts.evaluationSystemExtended(
+            concept.name,
+            highLevelTopics,
+            unmasteredTopics,
+            existingUnderstanding
+          ) +
+          "\n\nREMEMBER: Always include response length guidance in your follow-up questions (e.g., 'In 2-3 sentences...', 'In a paragraph...', 'In a few words...').",
       },
     ];
 
@@ -172,7 +176,7 @@ export class EvaluationService {
     });
 
     const result = await generateText({
-      model: models.fast,
+      model: models.standard,
       messages,
       stopWhen: stepCountIs(5),
       tools: {
@@ -229,7 +233,7 @@ ${userAnswer}
 <context>
 Recent conversation:
 ${conversationHistory
-  .slice(-4)
+  .slice(-10)
   .map((entry) => `${entry.role}: ${entry.content}`)
   .join("\n\n")}
 </context>

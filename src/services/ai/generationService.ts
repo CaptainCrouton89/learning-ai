@@ -29,7 +29,7 @@ export class GenerationService {
 ${
   conversationHistory.length > 0
     ? `Previous discussion:\n${conversationHistory
-        .slice(-4)
+        .slice(-10)
         .map((entry) => `${entry.role}: ${entry.content}`)
         .join("\n\n")}`
     : "Starting the conversation."
@@ -66,7 +66,7 @@ IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sen
 ${
   conversationHistory.length > 0
     ? `Recent discussion:\n${conversationHistory
-        .slice(-3)
+        .slice(-10)
         .map((entry) => `${entry.role}: ${entry.content}`)
         .join("\n\n")}`
     : "This is the beginning of our discussion."
