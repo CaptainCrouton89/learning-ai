@@ -240,11 +240,13 @@ export class AIService {
 
   async generateHighLevelRecall(
     concept: Concept,
-    itemsCovered: string[]
+    itemsCovered: string[],
+    existingUnderstanding: string
   ): Promise<string> {
     return this.generationService.generateHighLevelRecall(
       concept,
-      itemsCovered
+      itemsCovered,
+      existingUnderstanding
     );
   }
 
@@ -282,13 +284,15 @@ export class AIService {
     question: string,
     userAnswer: string,
     concept: Concept,
-    itemsCovered: string[]
+    itemsCovered: string[],
+    existingUnderstanding: string
   ): Promise<string> {
     return this.evaluationService.evaluateHighLevelAnswer(
       question,
       userAnswer,
       concept,
-      itemsCovered
+      itemsCovered,
+      existingUnderstanding
     );
   }
 

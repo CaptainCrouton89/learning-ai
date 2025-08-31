@@ -249,7 +249,8 @@ Example format:
 
   async generateHighLevelRecall(
     concept: Concept,
-    itemsCovered: string[]
+    itemsCovered: string[],
+    existingUnderstanding: string
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
@@ -257,22 +258,65 @@ Example format:
 You are an expert educator testing synthesis and critical thinking about ${concept.name}.
 </role>
 
+<user-level>
+Existing Understanding: ${existingUnderstanding}
+</user-level>
+
 <objective>
-Create questions that test deep understanding through analysis and prioritization, not just recall.
+Create questions that test understanding through analysis, scaled to the learner's level.
 </objective>
 
-<question-design-framework>
+<difficulty-scaled-frameworks>
+${
+  existingUnderstanding === 'None - Complete beginner'
+    ? `**BEGINNER-LEVEL SYNTHESIS (Simple Pattern Recognition)**:
+1. **Basic Comparison**: "Which item is MOST similar to X?"
+2. **Simple Grouping**: "Which of these items belong together?"
+3. **Clear Differences**: "What's the main difference between A and B?"
+4. **Obvious Relationships**: "How does X directly affect Y?"
+5. **Basic Prioritization**: "Which is more important: A or B?"
+
+Focus on:
+- Clear, direct relationships
+- Binary choices (this OR that)
+- Observable patterns
+- Concrete examples
+- Single-step reasoning`
+    : existingUnderstanding === 'Some - I know the basics'
+    ? `**INTERMEDIATE-LEVEL SYNTHESIS (Pattern Analysis)**:
 1. **Comparative Analysis**: "Among X, Y, and Z, which most influences..."
-2. **Causal Reasoning**: "Why does X lead to Y in most cases but not when Z is present?"
-3. **Pattern Recognition**: "What unexpected similarity exists between..."
-4. **Prioritization Under Constraints**: "If you could only control one factor..."
-5. **Counter-intuitive Insights**: "Why might the obvious approach fail when..."
-6. **Trade-off Analysis**: "When optimizing for X, what must you sacrifice in Y?"
-</question-design-framework>
+2. **Conditional Reasoning**: "Why does X lead to Y, but not always?"
+3. **Pattern Recognition**: "What pattern connects these three items?"
+4. **Trade-offs**: "If you prioritize X, what happens to Y?"
+5. **Contextual Application**: "In scenario A vs B, which approach works?"
+
+Focus on:
+- Multi-factor comparisons
+- Cause-and-effect chains
+- Exceptions to rules
+- Trade-off decisions
+- Context-dependent answers`
+    : `**ADVANCED-LEVEL SYNTHESIS (Complex Analysis)**:
+1. **Counter-intuitive Insights**: "Why might the obvious approach fail?"
+2. **Complex Causality**: "Under what conditions does the pattern reverse?"
+3. **Hidden Relationships**: "What unexpected connection exists between..."
+4. **Multi-constraint Optimization**: "Given constraints A, B, and C, how would you..."
+5. **Misconception Analysis**: "Why does misconception X persist despite evidence?"
+6. **System-level Thinking**: "How do second-order effects change the outcome?"
+
+Focus on:
+- Non-obvious relationships
+- Multiple interacting factors
+- Edge cases and exceptions
+- Strategic thinking
+- Meta-level analysis`
+}
+</difficulty-scaled-frameworks>
 
 <critical-requirements>
-- Questions must have NON-OBVIOUS answers requiring genuine analysis
-- Avoid questions where the answer is self-evident or tautological
+- Questions must match the learner's understanding level
+- Avoid overwhelming beginners with complexity
+- Challenge advanced learners appropriately
 - Focus on "why" and "which" rather than "what" or "list"
 - Include specific constraints or conditions
 - Require choosing/ranking rather than just explaining
@@ -288,29 +332,61 @@ Create questions that test deep understanding through analysis and prioritizatio
 Concept: ${concept.name}
 Items studied: ${itemsCovered.slice(-10).join(", ")}
 Key topics: ${concept["high-level"].slice(0, 5).join(", ")}
+Learner Level: ${existingUnderstanding}
 </context>
 
 <task>
-Generate ONE precise analytical question that:
+Generate ONE precise analytical question appropriate for the learner's level:
 
-1. References 2-3 specific items from those studied
-2. Requires comparing, prioritizing, or identifying causal relationships
-3. Has a non-obvious answer that requires reasoning
-4. Cannot be answered with simple recall or listing
+${
+  existingUnderstanding === 'None - Complete beginner'
+    ? `**BEGINNER QUESTION REQUIREMENTS**:
+1. Reference 2 specific items they've studied
+2. Ask for a simple comparison or grouping
+3. Have a clear, logical answer
+4. Build confidence while testing synthesis
 
-<good-examples>
-- "Between ${itemsCovered[0] || 'factor A'} and ${itemsCovered[1] || 'factor B'}, which has a greater impact on [specific outcome], and why might this hierarchy reverse under [specific condition]?"
-- "You've learned about [X, Y, Z]. If you had to sacrifice one to maximize [outcome], which would it be and what specific trade-offs would this create?"
-- "Why does [pattern] hold true for [items A and B] but break down for [item C]? What underlying principle explains this exception?"
-</good-examples>
+<good-beginner-examples>
+- "Looking at ${itemsCovered[0] || 'item A'} and ${itemsCovered[1] || 'item B'}, which one is more [specific attribute]? Why?"
+- "You've learned about [X, Y, Z]. Which two are most similar and what makes them alike?"
+- "If you had to choose between [A] and [B] for [simple goal], which would work better?"
+- "What's the biggest difference between [item X] and [item Y] that you've noticed?"
+</good-beginner-examples>`
+    : existingUnderstanding === 'Some - I know the basics'
+    ? `**INTERMEDIATE QUESTION REQUIREMENTS**:
+1. Reference 2-3 specific items from those studied
+2. Require comparing, prioritizing, or identifying patterns
+3. Have a reasoned answer with trade-offs
+4. Test analytical thinking
 
-<bad-examples>
+<good-intermediate-examples>
+- "Between ${itemsCovered[0] || 'factor A'} and ${itemsCovered[1] || 'factor B'}, which has a greater impact on [outcome]? What conditions might change this?"
+- "You've learned about [X, Y, Z]. What pattern connects all three, and which one is the exception?"
+- "If you had to optimize for [goal A] vs [goal B], how would your choice between [item X] and [item Y] change?"
+- "Why does [relationship] work for [items A and B] but not for [item C]?"
+</good-intermediate-examples>`
+    : `**ADVANCED QUESTION REQUIREMENTS**:
+1. Reference multiple specific items with complex relationships
+2. Require identifying non-obvious connections or contradictions
+3. Have nuanced answers with multiple valid perspectives
+4. Challenge assumptions and test deep synthesis
+
+<good-advanced-examples>
+- "Between ${itemsCovered[0] || 'factor A'} and ${itemsCovered[1] || 'factor B'}, which has a greater impact on [outcome], and under what specific conditions would this hierarchy completely reverse?"
+- "You've learned about [X, Y, Z]. What counter-intuitive relationship exists between them that beginners often miss?"
+- "Why does [common assumption] about [items A and B] seem logical but actually mislead practitioners? What's the real dynamic?"
+- "Given constraints [A, B, C], how would you balance [competing factors] to achieve [complex goal]? What's the key trade-off?"
+</good-advanced-examples>`
+}
+
+<bad-examples-to-avoid>
 - "Explain how [listing items] contribute to [obvious outcome]"
 - "Describe the relationship between [X] and [Y]"
 - "How does understanding [X] help you evaluate [X]?"
-</bad-examples>
+- Questions that are too complex for beginners or too simple for advanced learners
+</bad-examples-to-avoid>
 
-Create a question following the good examples pattern, using the actual items and topics from this concept.
+Create a question following the appropriate difficulty level, using the actual items and topics from this concept.
 </task>`,
     });
 

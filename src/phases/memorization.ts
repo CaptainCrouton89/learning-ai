@@ -338,7 +338,8 @@ export class MemorizationPhase {
       console.log(chalk.magenta("\n💭 Let's see the bigger picture...\n"));
       question = await this.ai.generateHighLevelRecall(
         concept,
-        this.itemsCovered
+        this.itemsCovered,
+        session.existingUnderstanding
       );
     }
 
@@ -377,7 +378,8 @@ export class MemorizationPhase {
         question,
         answer,
         concept,
-        this.itemsCovered
+        this.itemsCovered,
+        session.existingUnderstanding
       );
     }
 

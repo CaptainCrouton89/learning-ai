@@ -491,23 +491,40 @@ Provide substantive feedback that advances their understanding, then ask a speci
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `Evaluate the user's understanding of the "why" or "what causes" behind ${item} in ${concept.name}.
-      Be DIRECT about what's wrong and what's right.
-      NO follow-up questions - just provide feedback.
+      system: `You are an expert educator helping learners understand the deeper "why" behind ${item} in ${concept.name}.
       
-      STRUCTURE:
-      Start with ✓ Correct or ❌ Incorrect/Incomplete
-      Then provide the actual facts in bullet points
-      End with one key principle to remember`,
+      CRITICAL: If the user says "I'm not sure" or shows uncertainty:
+      1. DIRECTLY ANSWER the specific question asked
+      2. Explain the reasoning and mechanisms clearly
+      3. Use concrete examples to illustrate
+      4. Teach, don't just evaluate
+      
+      RESPONSE STRUCTURE:
+      For uncertain/incorrect answers:
+      **Let me explain this clearly:**
+      {Direct answer to the exact question}
+      
+      **Here's why this works this way:**
+      • {Specific mechanism or cause}
+      • {Supporting evidence or example}
+      • {Deeper principle at play}
+      
+      **Think of it like this:** {Helpful analogy}
+      
+      **Key insight:** {The crucial takeaway}
+      
+      For correct answers:
+      **✓ Excellent understanding!**
+      {Acknowledge what they got right}
+      
+      **Let me add:** {Additional depth or nuance}`,
       prompt: `Elaboration question: ${question}
       About item: ${item}
       User answer: ${userAnswer}
       
-      Provide feedback following this structure:
-      - ✓ or ❌ with brief assessment
-      - Bullet points with the correct facts about causes/mechanisms
-      - One memorable principle or pattern
-      - NO softening, be direct about errors`,
+      If they're uncertain, ANSWER THE QUESTION DIRECTLY first.
+      Then explain the mechanisms and reasoning clearly.
+      Be educational and helpful, not just evaluative.`,
     });
 
     return text;
@@ -522,27 +539,32 @@ Provide substantive feedback that advances their understanding, then ask a speci
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `Evaluate how well the user connected ${performingItem} to ${strugglingItem} in ${concept.name}.
-      Be DIRECT and precise about connections.
-      NO follow-up questions.
+      system: `Help the user understand how ${performingItem} connects to ${strugglingItem} in ${concept.name}.
       
-      STRUCTURE:
-      ✓ or ❌ assessment
-      Bullet points of correct connections
-      One key distinction to remember`,
+      For uncertain answers:
+      - DIRECTLY explain the connection asked about
+      - Use the known item to illuminate the struggling one
+      - Make the relationship clear and memorable
+      
+      STRUCTURE for uncertain answers:
+      **Let me show you the connection:**
+      
+      **Direct answer:** {How these two items actually relate}
+      
+      **The key similarity:** {What they share and why it matters}
+      
+      **The crucial difference:** {What distinguishes them}
+      
+      **Think of it this way:** {Analogy using the known item to explain the struggling one}
+      
+      **Remember:** {Simple rule to distinguish them}`,
       prompt: `Connection question: ${question}
       Linking: ${performingItem} (known) to ${strugglingItem} (struggling)
       User answer: ${userAnswer}
       
-      Format:
-      **✓ Correct connections:** or **❌ Missing connections:**
-      
-      **The actual connections:**
-      • Similarity: {specific shared attribute with values}
-      • Difference: {specific contrasting attribute with values}
-      • Pattern: {underlying principle that links them}
-      
-      **Remember:** {Key distinction between the two items}`,
+      If uncertain, EXPLAIN THE CONNECTION clearly.
+      Use their knowledge of ${performingItem} to help them understand ${strugglingItem}.
+      Be educational and helpful, showing how the items relate.`,
     });
 
     return text;
@@ -552,33 +574,77 @@ Provide substantive feedback that advances their understanding, then ask a speci
     question: string,
     userAnswer: string,
     concept: Concept,
-    itemsCovered: string[]
+    itemsCovered: string[],
+    existingUnderstanding: string = "Some - I know the basics"
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `Evaluate the user's high-level synthesis for ${concept.name}.
-      Be DIRECT about gaps and errors.
-      Focus on patterns and relationships.
-      NO follow-up questions.
+      system: `You are helping learners synthesize their understanding of ${concept.name}.
       
-      STRUCTURE:
-      ✓ or ❌ with main assessment
-      Bullet points of key patterns/facts
-      One overarching principle`,
+      <user-level>
+      Existing Understanding: ${existingUnderstanding}
+      </user-level>
+      
+      CRITICAL for uncertain answers ("I'm not sure", "I don't know"):
+      1. DIRECTLY ANSWER the specific question asked
+      2. Don't just list patterns - explain the actual answer
+      3. If asked "which is more critical", say which and why
+      4. If asked about trade-offs, explain the specific trade-offs
+      5. Teach the concept, don't just summarize
+      
+      <difficulty-adjusted-evaluation>
+      ${
+        existingUnderstanding === 'None - Complete beginner'
+          ? `**For Beginners:**
+      - Accept simpler pattern recognition as good synthesis
+      - Praise basic comparisons and groupings
+      - Provide more guidance and examples
+      - Use everyday analogies to explain concepts
+      - Break down complex ideas into simple parts`
+          : existingUnderstanding === 'Some - I know the basics'
+          ? `**For Intermediate Learners:**
+      - Expect pattern analysis and trade-off recognition
+      - Look for cause-and-effect understanding
+      - Provide balanced feedback with some depth
+      - Use domain-specific examples
+      - Connect to broader concepts`
+          : `**For Advanced Learners:**
+      - Expect sophisticated analysis and counter-intuitive insights
+      - Look for nuanced understanding of edge cases
+      - Provide minimal guidance, more challenging perspectives
+      - Use complex, professional examples
+      - Explore second-order effects and systems thinking`
+      }
+      </difficulty-adjusted-evaluation>
+      
+      RESPONSE STRUCTURE for uncertain answers:
+      **Let me help you understand this:**
+      
+      **Direct answer:** {Answer the exact question - e.g., "X is more critical because..."}
+      
+      **Here's the reasoning:**
+      • {Specific explanation of why this answer is correct}
+      • {Evidence or examples supporting this}
+      • {Trade-offs or conditions mentioned in the question}
+      
+      **The key principle:** {Core insight that answers their question}
+      
+      **In practice:** {Real example showing this principle}
+      
+      For good answers:
+      **✓ Good synthesis!**
+      {What they understood well}
+      
+      **Let me add:** {Additional insight or nuance}`,
       prompt: `High-level question: ${question}
       Items covered: ${itemsCovered.join(", ")}
       Topics: ${concept["high-level"].join(", ")}
       User answer: ${userAnswer}
       
-      Format:
-      **✓ Correct synthesis:** or **❌ Incomplete synthesis:**
-      
-      **Key patterns across all items:**
-      • Pattern 1: {specific relationship with examples}
-      • Pattern 2: {specific trend with values}
-      • Pattern 3: {specific distinction or grouping}
-      
-      **Overarching principle:** {The main takeaway that unifies everything}`,
+      IMPORTANT: If they're uncertain, ANSWER THE SPECIFIC QUESTION.
+      Don't give generic patterns - address what was actually asked.
+      For example, if asked "which is more critical", say which one and explain why.
+      If asked about trade-offs, explain the actual trade-offs.`,
     });
 
     return text;
