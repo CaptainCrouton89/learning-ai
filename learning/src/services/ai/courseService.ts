@@ -102,7 +102,10 @@ export class CourseService {
     );
 
     return {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
       name: courseBase.name,
+      description: `A personalized course on ${topic}`,
+      timeEstimate: timeAvailable,
       backgroundKnowledge: courseBase.backgroundKnowledge,
       concepts: conceptDetails,
       "drawing-connections": courseBase["drawing-connections"],

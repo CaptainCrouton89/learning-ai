@@ -16,13 +16,13 @@ export class CourseManager {
   }
 
   async saveCourse(course: Course): Promise<void> {
-    const coursePath = path.join(this.coursesDir, `${course.name}.json`);
+    const coursePath = path.join(this.coursesDir, `${course.id}.json`);
     await fs.writeFile(coursePath, JSON.stringify(course, null, 2));
     console.log(`Course saved to ${coursePath}`);
   }
 
-  async loadCourse(courseName: string): Promise<Course> {
-    const coursePath = path.join(this.coursesDir, `${courseName}.json`);
+  async loadCourse(courseId: string): Promise<Course> {
+    const coursePath = path.join(this.coursesDir, `${courseId}.json`);
     const data = await fs.readFile(coursePath, 'utf-8');
     return JSON.parse(data) as Course;
   }

@@ -10,7 +10,10 @@ export interface Concept {
 }
 
 export interface Course {
+  id: string;
   name: string;
+  description: string;
+  timeEstimate: string;
   backgroundKnowledge?: string[];
   concepts: Concept[];
   'drawing-connections': string[];
