@@ -63,20 +63,37 @@ export class EvaluationService {
       }
     }
 
+    // Build messages array with conversation history
+    const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+      {
+        role: "system",
+        content: highLevelPrompts.evaluationSystemExtended(
+          course.name,
+          topicsToTeach,
+          existingUnderstanding,
+          progressSummary
+        ),
+      },
+    ];
+
+    // Add the last 10 conversation history entries as proper messages
+    conversationHistory.slice(-10).forEach((entry) => {
+      messages.push({
+        role: entry.role === "user" ? "user" : "assistant",
+        content: entry.content,
+      });
+    });
+
+    // Add the current user answer
+    messages.push({
+      role: "user",
+      content: userAnswer,
+    });
+
     const result = await generateText({
       model: this.model,
       stopWhen: stepCountIs(5), // stop after 5 steps if tools were called
-      system: highLevelPrompts.evaluationSystemExtended(
-        course.name,
-        topicsToTeach,
-        existingUnderstanding,
-        progressSummary
-      ),
-      prompt: highLevelPrompts.evaluationPrompt(
-        userAnswer,
-        conversationHistory,
-        progressSummary
-      ),
+      messages,
       tools: {
         update_comprehension: tool({
           description:
@@ -123,18 +140,36 @@ export class EvaluationService {
       comprehension: number;
     }> = [];
 
+    // Build messages array with conversation history
+    const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+      {
+        role: "system",
+        content: conceptLearningPrompts.evaluationSystemExtended(
+          concept.name,
+          highLevelTopics,
+          unmasteredTopics,
+          existingUnderstanding
+        ),
+      },
+    ];
+
+    // Add the last 10 conversation history entries as proper messages
+    conversationHistory.slice(-10).forEach((entry) => {
+      messages.push({
+        role: entry.role === "user" ? "user" : "assistant",
+        content: entry.content,
+      });
+    });
+
+    // Add the current user answer
+    messages.push({
+      role: "user",
+      content: userAnswer,
+    });
+
     const result = await generateText({
       model: this.model,
-      system: conceptLearningPrompts.evaluationSystemExtended(
-        concept.name,
-        highLevelTopics,
-        unmasteredTopics,
-        existingUnderstanding
-      ),
-      prompt: conceptLearningPrompts.evaluationPrompt(
-        userAnswer,
-        conversationHistory
-      ),
+      messages,
       stopWhen: stepCountIs(5),
       tools: {
         update_comprehension: tool({

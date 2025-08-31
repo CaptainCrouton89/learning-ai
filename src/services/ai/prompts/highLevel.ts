@@ -139,38 +139,38 @@ Your response MUST provide SUBSTANTIAL TEACHING CONTENT:
 For FULL MASTERY (score 5):
 **✓ Excellent mastery!** {Specific acknowledgment}
 
-**Let me add depth:** {Full paragraph with advanced insights, edge cases, or deeper mechanisms}
+{Full paragraph with advanced insights, edge cases, or deeper mechanisms}
 
-**Additional perspective:** {Another paragraph connecting to related concepts or applications}
+{Another paragraph connecting to related concepts or applications}
 
-**Building further:** {Question exploring even more sophisticated aspects}
+{Question exploring even more sophisticated aspects}
 
 For NEAR MASTERY (score 4):
 **✓ Strong understanding!** {What they got right}
 
-**Let me complete the picture:** {2-3 sentences filling gaps}
+{2-3 sentences filling gaps}
 
-**Here's the deeper mechanism:** {Full paragraph explaining underlying processes}
+{Full paragraph explaining underlying processes}
 
-**To reach full mastery:** {Question targeting the missing piece}
+{Question targeting the missing piece}
 
 For PARTIAL UNDERSTANDING (score 3):
 **✓ Good foundation!** {Acknowledge correct parts}
 
-**Let me expand significantly:** {Full paragraph teaching missing concepts}
+{Full paragraph teaching missing concepts}
 
-**Here's how this actually works:** {Another paragraph with mechanisms and examples}
+{Another paragraph with mechanisms and examples}
 
-**Important connections:** {Paragraph linking to other concepts}
+{Paragraph linking to other concepts}
 
-**To deepen understanding:** {Question building on their knowledge}
+{Question building on their knowledge}
 
 For NEEDS TEACHING (score 0-2):
 **Let me teach this comprehensively:**
 
 {Full paragraph introducing the concept from the ground up}
 
-**The mechanism behind this:** {Paragraph explaining how it works}
+{Paragraph explaining how it works}
 
 **Real-world example:** {Detailed example with step-by-step explanation}
 
@@ -237,10 +237,9 @@ IMPORTANT: Before generating your response:
 <example-correct-identification>
 User: "Endowment Effect"
 
-**✓ Correct identification:** You identified "Endowment Effect" correctly.
+**✓ Correct identification:** You identified the Endowment Effect correctly.
 
-**Key explanation:**
-• People value items more highly once they own them vs before acquiring them
+**Key mechanism:** People value items more highly once they own them vs before acquiring them
 • Typically causes 2-3x overvaluation of owned items in experiments
 • Example: Coffee mug owners demand $7 to sell while buyers only offer $3
 
@@ -248,24 +247,28 @@ User: "Endowment Effect"
 </example-correct-identification>
 
 <example-no-answer>
-[Previous question in conversation: "What cognitive bias causes people to overvalue items they own?"]
+[Previous question in conversation: "How might the form of legitimacy—say divine kingship versus legal codes—affect the consent people give to their rulers?"]
 User: "I don't know" or "No idea"
 
-**No worries! Let me explain:**
+**Let me answer that specific question:**
 
-**Direct answer:** The Endowment Effect is the cognitive bias that causes people to overvalue items they own compared to identical items they don't own.
+**How forms of legitimacy affect consent:** The form of legitimacy fundamentally shapes the nature of consent people give to their rulers:
 
-**How this specific bias works:** When you own something, your brain treats giving it up as a loss rather than a neutral transaction. Since losses feel about twice as painful as gains feel good (loss aversion), you demand more money to sell something you own than you'd pay to buy it.
+**Divine kingship** creates consent based on religious belief and tradition:
+• Consent becomes a matter of faith - questioning the ruler means questioning divine will
+• People consent out of religious duty and fear of spiritual consequences
+• This produces deep but brittle consent - strong while faith holds, but catastrophic if belief wavers
+• Example: The French monarchy's divine right collapsed entirely once Enlightenment ideas challenged religious authority
 
-**The mechanism in action:**
-1. You acquire an item (even randomly, like in experiments)
-2. Your brain immediately categorizes it as "mine"
-3. Selling it now feels like losing something, not just trading
-4. You increase your valuation to compensate for this perceived loss
+**Legal codes** create consent based on rational agreement and reciprocal obligations:
+• Consent becomes contractual - citizens agree to follow laws in exchange for protection and services
+• People can question specific laws without challenging the entire system
+• This produces more flexible, negotiable consent that can evolve with society
+• Example: Constitutional democracies allow peaceful transitions and reforms through legal processes
 
-**Classic example:** In studies, people given a mug demanded ~$7 to sell it, while non-owners only offered ~$3 for the same mug - more than double the price just from ownership!
+**The key difference:** Divine legitimacy demands total, unquestioning consent, while legal legitimacy allows partial, conditional consent. This is why legal systems tend to be more stable in pluralistic societies - they can accommodate disagreement without collapsing.
 
-**Let's check understanding:** How might the Endowment Effect influence someone during a free trial period?
+**Let's explore further:** In modern states that claim democratic legitimacy, what happens when large groups feel the democratic process itself is illegitimate?
 </example-no-answer>`,
 
   evaluationSystemExtended: (
@@ -317,10 +320,16 @@ ${progressSummary}
 </current-progress>
 
 <instruction>
-CRITICAL: If the user says "no idea" or shows low comprehension:
-1. Look at the conversation history to find the EXACT question that was asked
-2. Answer that SPECIFIC question directly - don't give generic background
-3. Teach the particular concept/mechanism that was asked about
+CRITICAL: When the user says "I don't know", "no idea", or shows low comprehension:
+1. Find the EXACT question from the conversation history
+2. Answer THAT SPECIFIC QUESTION directly and thoroughly
+3. Don't provide generic background - answer what was actually asked
+4. After answering, ask a follow-up that explores a different aspect
+
+Example:
+- If you asked "How might X affect Y?" and user says "I don't know"
+- Answer: "X affects Y by [specific mechanisms and examples]"
+- NOT: "Let me explain what X is..."
 
 Evaluate comprehension, provide targeted feedback addressing their specific question, then ask a NEW question that:
 1. Covers a different aspect than what was just discussed
