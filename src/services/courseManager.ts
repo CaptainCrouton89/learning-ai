@@ -151,6 +151,12 @@ export class CourseManager {
       question: string;
       userAnswer: string;
       aiResponse: { comprehension: number; response: string };
+    },
+    scheduling?: {
+      easeFactor: number;
+      interval: number;
+      nextDuePosition: number;
+      successCount: number;
     }
   ): Promise<void> {
     if (!session.conceptsProgress.has(conceptName)) {
@@ -159,7 +165,8 @@ export class CourseManager {
         itemsProgress: new Map(),
         topicProgress: new Map(),
         abstractQuestionsAsked: [],
-        specialQuestionsAsked: []
+        specialQuestionsAsked: [],
+        globalPositionCounter: 0
       });
     }
 
@@ -169,7 +176,11 @@ export class CourseManager {
       conceptProgress.itemsProgress.set(itemName, {
         itemName,
         attempts: [],
-        successCount: 0
+        successCount: 0,
+        easeFactor: 2.5,
+        interval: 0,
+        lastReviewPosition: 0,
+        nextDuePosition: 0
       });
     }
 
@@ -179,7 +190,13 @@ export class CourseManager {
       timestamp: new Date()
     });
 
-    if (attempt.aiResponse.comprehension >= 4) {
+    if (scheduling) {
+      itemProgress.easeFactor = scheduling.easeFactor;
+      itemProgress.interval = scheduling.interval;
+      itemProgress.lastReviewPosition = conceptProgress.globalPositionCounter;
+      itemProgress.nextDuePosition = scheduling.nextDuePosition;
+      itemProgress.successCount = scheduling.successCount;
+    } else if (attempt.aiResponse.comprehension >= 4) {
       itemProgress.successCount++;
     }
 
@@ -199,7 +216,8 @@ export class CourseManager {
         itemsProgress: new Map(),
         topicProgress: new Map(),
         abstractQuestionsAsked: [],
-        specialQuestionsAsked: []
+        specialQuestionsAsked: [],
+        globalPositionCounter: 0
       });
     }
 
@@ -247,7 +265,8 @@ export class CourseManager {
         itemsProgress: new Map(),
         topicProgress: new Map(),
         abstractQuestionsAsked: [],
-        specialQuestionsAsked: []
+        specialQuestionsAsked: [],
+        globalPositionCounter: 0
       });
     }
 
@@ -391,5 +410,45 @@ export class CourseManager {
     if (!itemProgress || itemProgress.attempts.length === 0) return null;
 
     return itemProgress.attempts[itemProgress.attempts.length - 1].aiResponse.comprehension;
+  }
+
+  getItemScheduling(
+    session: LearningSession,
+    conceptName: string,
+    itemName: string
+  ): { easeFactor: number; interval: number; nextDuePosition: number; successCount: number } | null {
+    const conceptProgress = session.conceptsProgress.get(conceptName);
+    if (!conceptProgress) return null;
+
+    const itemProgress = conceptProgress.itemsProgress.get(itemName);
+    if (!itemProgress) return null;
+
+    return {
+      easeFactor: itemProgress.easeFactor,
+      interval: itemProgress.interval,
+      nextDuePosition: itemProgress.nextDuePosition,
+      successCount: itemProgress.successCount
+    };
+  }
+
+  incrementGlobalPosition(
+    session: LearningSession,
+    conceptName: string
+  ): number {
+    const conceptProgress = session.conceptsProgress.get(conceptName);
+    if (!conceptProgress) {
+      throw new Error(`Concept ${conceptName} not found in session`);
+    }
+    
+    conceptProgress.globalPositionCounter++;
+    return conceptProgress.globalPositionCounter;
+  }
+
+  getGlobalPosition(
+    session: LearningSession,
+    conceptName: string
+  ): number {
+    const conceptProgress = session.conceptsProgress.get(conceptName);
+    return conceptProgress?.globalPositionCounter || 0;
   }
 }

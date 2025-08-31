@@ -30,6 +30,10 @@ export interface ItemProgress {
   itemName: string;
   attempts: FlashcardAttempt[];
   successCount: number;
+  easeFactor: number;
+  interval: number;
+  lastReviewPosition: number;
+  nextDuePosition: number;
 }
 
 export interface ConceptAttempt {
@@ -68,6 +72,7 @@ export interface ConceptProgress {
     timestamp: Date;
   }>;
   specialQuestionsAsked: Array<SpecialQuestion>;
+  globalPositionCounter: number;
 }
 
 export interface FlashcardSchedule {

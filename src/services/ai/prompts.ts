@@ -80,7 +80,7 @@ Based on the user's response, suggest a final refined topic that:
 4. Is neither too broad nor too narrow
 
 Provide a single, well-defined topic string that will be used for course generation.
-</task>`
+</task>`,
 };
 
 export const coursePrompts = {
@@ -179,11 +179,15 @@ Learning Goals: ${learningGoals}
 
 <time-constraint-reminder>
 ${
-  timeAvailable === "<15min" ? "CRITICAL: This is a MICRO session (<15 min). Create exactly 1-2 ultra-focused concepts. Absolute minimum viable content only."
-  : timeAvailable === "15-60min" ? "This is a quick session (15-60 min). Create 2-3 well-scoped concepts maximum."
-  : timeAvailable === "1-6hours" ? "This is a standard session (1-6 hours). Create 3-4 comprehensive concepts."
-  : timeAvailable === "6-12hours" ? "This is a deep dive session (6-12 hours). Create 4-5 detailed concepts with depth."
-  : "This is a mastery session (12+ hours). Create 5-7 extensive concepts with complete coverage."
+  timeAvailable === "<15min"
+    ? "CRITICAL: This is a MICRO session (<15 min). Create exactly 1-2 ultra-focused concepts. Absolute minimum viable content only."
+    : timeAvailable === "15-60min"
+    ? "This is a quick session (15-60 min). Create 2-3 well-scoped concepts maximum."
+    : timeAvailable === "1-6hours"
+    ? "This is a standard session (1-6 hours). Create 3-4 comprehensive concepts."
+    : timeAvailable === "6-12hours"
+    ? "This is a deep dive session (6-12 hours). Create 4-5 detailed concepts with depth."
+    : "This is a mastery session (12+ hours). Create 5-7 extensive concepts with complete coverage."
 }
 </time-constraint-reminder>
 
@@ -335,10 +339,21 @@ Number of concepts in course: ${otherConcepts.length + 1}
 
 <time-per-concept>
 ${
-  timeAvailable === "15min" ? `You have ~${Math.floor(15 / (otherConcepts.length + 1))} minutes per concept. BE EXTREMELY SELECTIVE.`
-  : timeAvailable === "30min" ? `You have ~${Math.floor(30 / (otherConcepts.length + 1))} minutes per concept. Focus on essentials.`
-  : timeAvailable === "1hour" ? `You have ~${Math.floor(60 / (otherConcepts.length + 1))} minutes per concept. Good coverage possible.`
-  : `You have ~${Math.floor(120 / (otherConcepts.length + 1))} minutes per concept. Comprehensive coverage expected.`
+  timeAvailable === "15min"
+    ? `You have ~${Math.floor(
+        15 / (otherConcepts.length + 1)
+      )} minutes per concept. BE EXTREMELY SELECTIVE.`
+    : timeAvailable === "30min"
+    ? `You have ~${Math.floor(
+        30 / (otherConcepts.length + 1)
+      )} minutes per concept. Focus on essentials.`
+    : timeAvailable === "1hour"
+    ? `You have ~${Math.floor(
+        60 / (otherConcepts.length + 1)
+      )} minutes per concept. Good coverage possible.`
+    : `You have ~${Math.floor(
+        120 / (otherConcepts.length + 1)
+      )} minutes per concept. Comprehensive coverage expected.`
 }
 </time-per-concept>
 
@@ -372,7 +387,11 @@ Remember:
 };
 
 export const highLevelPrompts = {
-  questionSystem: (courseName: string, backgroundTopics: string[], existingUnderstanding: string) => `<role>
+  questionSystem: (
+    courseName: string,
+    backgroundTopics: string[],
+    existingUnderstanding: string
+  ) => `<role>
 You are a welcoming educator introducing "${courseName}" like it's the first day of class.
 Your goal is to BUILD UNDERSTANDING, not test knowledge.
 </role>
@@ -390,17 +409,21 @@ This is an OVERVIEW phase where you:
 </teaching-philosophy>
 
 <background-topics-to-teach>
-${backgroundTopics.length > 0 ? backgroundTopics.map(topic => `• ${topic}`).join('\n') : '• No specific prerequisites - user has sufficient background'}
+${
+  backgroundTopics.length > 0
+    ? backgroundTopics.map((topic) => `• ${topic}`).join("\n")
+    : "• No specific prerequisites - user has sufficient background"
+}
 </background-topics-to-teach>
 
 <teaching-approach>
 ${
-  existingUnderstanding === 'None - Complete beginner'
+  existingUnderstanding === "None - Complete beginner"
     ? `- Define and explain background concepts clearly
 - Use relatable examples and analogies
 - Build vocabulary gradually
 - Check understanding gently`
-    : existingUnderstanding === 'Some - I know the basics'
+    : existingUnderstanding === "Some - I know the basics"
     ? `- Briefly review key concepts
 - Focus on connections and context
 - Introduce nuanced perspectives
@@ -435,7 +458,11 @@ ${
 - Make learning enjoyable
 </desired_behavior>`,
 
-  evaluationSystem: (courseName: string, backgroundTopics: string[], existingUnderstanding: string) => `<role>
+  evaluationSystem: (
+    courseName: string,
+    backgroundTopics: string[],
+    existingUnderstanding: string
+  ) => `<role>
 You are a supportive educator guiding learners through the overview of "${courseName}".
 Your role is to TEACH and ENCOURAGE, not to test strictly.
 </role>
@@ -461,17 +488,21 @@ This phase is about:
 </evaluation-philosophy>
 
 <background-topics-covered>
-${backgroundTopics.length > 0 ? backgroundTopics.join(", ") : 'No specific background topics - focusing on course overview'}
+${
+  backgroundTopics.length > 0
+    ? backgroundTopics.join(", ")
+    : "No specific background topics - focusing on course overview"
+}
 </background-topics-covered>
 
 <comprehensive-scoring-guidelines>
 ${
-  existingUnderstanding === 'None - Complete beginner'
+  existingUnderstanding === "None - Complete beginner"
     ? `- 0-2: Needs comprehensive teaching
 - 3: Shows basic understanding - needs expansion
 - 4: Good understanding - needs refinement
 - 5: Full mastery demonstrated`
-    : existingUnderstanding === 'Some - I know the basics'
+    : existingUnderstanding === "Some - I know the basics"
     ? `- 0-2: Significant gaps to address
 - 3: Basic understanding - needs depth
 - 4: Strong grasp - needs polish
@@ -485,7 +516,7 @@ ${
 IMPORTANT SCORING RULES:
 - Score 5 is REQUIRED for progression
 - Brief answers scored 3-4, need expansion for 5
-- "I already know this" needs demonstration
+- "I already know this": Trust the user, give them credit for what they know
 - Require comprehensive understanding
 - Be accurate and thorough in evaluation
 </comprehensive-scoring-guidelines>
@@ -564,12 +595,6 @@ EXAMPLES OF PROGRESSIVE QUESTIONS:
 - After user describes mechanism → "What factors can disrupt this process?"
 - After user gives examples → "In what situations might this not apply?"
 - After basic understanding → "How does this relate to [other concept]?"
-
-AVOID THESE REPETITIVE PATTERNS:
-- "Can you explain X?" after they just explained X
-- "What is Y?" when they've already defined Y
-- "How does Z work?" when they just described how Z works
-- Multiple variations of the same core question
 </question-generation-rules>
 
 <response-efficiency-rules>
@@ -580,11 +605,11 @@ AVOID THESE REPETITIVE PATTERNS:
 - Bullet points for clarity
 - Maximum 2-3 lines of feedback before question
 ${
-  existingUnderstanding === 'None - Complete beginner'
-    ? '- Simple language with concrete examples'
-    : existingUnderstanding === 'Some - I know the basics'
-    ? '- Intermediate depth without over-explaining'
-    : '- Technical precision expected'
+  existingUnderstanding === "None - Complete beginner"
+    ? "- Simple language with concrete examples"
+    : existingUnderstanding === "Some - I know the basics"
+    ? "- Intermediate depth without over-explaining"
+    : "- Technical precision expected"
 }
 </response-efficiency-rules>
 
@@ -693,7 +718,11 @@ Return as a JSON object with a "goals" field containing an array of exactly 4 st
 };
 
 export const conceptLearningPrompts = {
-  questionSystem: (conceptName: string, topics: string[], existingUnderstanding: string) => `<role>
+  questionSystem: (
+    conceptName: string,
+    topics: string[],
+    existingUnderstanding: string
+  ) => `<role>
 You are an expert educator facilitating deep learning of "${conceptName}".
 </role>
 
@@ -710,11 +739,11 @@ ${topics.map((topic) => `• ${topic}`).join("\n")}
 - Focus on one clear concept at a time
 - Use concrete scenarios when applicable
 ${
-  existingUnderstanding === 'None - Complete beginner'
-    ? '- Start with foundational concepts and build gradually'
-    : existingUnderstanding === 'Some - I know the basics'
-    ? '- Build on existing knowledge with intermediate complexity'
-    : '- Challenge with advanced scenarios and edge cases'
+  existingUnderstanding === "None - Complete beginner"
+    ? "- Start with foundational concepts and build gradually"
+    : existingUnderstanding === "Some - I know the basics"
+    ? "- Build on existing knowledge with intermediate complexity"
+    : "- Challenge with advanced scenarios and edge cases"
 }
 - Encourage critical thinking over recall
 </approach>`,
@@ -765,14 +794,14 @@ ${unmasteredTopics.map((topic) => `• ${topic}`).join("\n")}
 
 <scoring-criteria>
 ${
-  existingUnderstanding === 'None - Complete beginner'
+  existingUnderstanding === "None - Complete beginner"
     ? `- 0: No understanding or completely incorrect
 - 1: Major misconceptions for a beginner
 - 2: Basic understanding emerging
 - 3: Good beginner-level understanding
 - 4: Strong foundational grasp
 - 5: Exceptional understanding for a beginner`
-    : existingUnderstanding === 'Some - I know the basics'
+    : existingUnderstanding === "Some - I know the basics"
     ? `- 0: Below expected baseline
 - 1: Missing expected intermediate knowledge
 - 2: Some intermediate understanding
@@ -875,11 +904,11 @@ For "NO IDEA" or "I DON'T KNOW" responses:
 - Use analogies for difficult concepts
 - Give memorable examples and patterns
 ${
-  existingUnderstanding === 'None - Complete beginner'
-    ? '- Define all technical terms clearly\n- Use everyday analogies\n- Build vocabulary gradually'
-    : existingUnderstanding === 'Some - I know the basics'
-    ? '- Connect to their existing knowledge\n- Add intermediate complexity\n- Introduce nuanced perspectives'
-    : '- Explore advanced mechanisms\n- Discuss edge cases\n- Connect to cutting-edge applications'
+  existingUnderstanding === "None - Complete beginner"
+    ? "- Define all technical terms clearly\n- Use everyday analogies\n- Build vocabulary gradually"
+    : existingUnderstanding === "Some - I know the basics"
+    ? "- Connect to their existing knowledge\n- Add intermediate complexity\n- Introduce nuanced perspectives"
+    : "- Explore advanced mechanisms\n- Discuss edge cases\n- Connect to cutting-edge applications"
 }
 
 WHEN USER SAYS "NO IDEA" OR SIMILAR:

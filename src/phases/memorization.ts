@@ -12,7 +12,6 @@ import {
 export class MemorizationPhase {
   private ai = new AIService();
   private courseManager = new CourseManager();
-  private positionCounter = 0;
   private readonly MIN_EASE = 1.3;
   private readonly MAX_EASE = 4.0;
   private readonly INITIAL_EASE = 2.5;
@@ -41,18 +40,35 @@ export class MemorizationPhase {
       concept.name
     );
 
-    const scheduleQueue: FlashcardSchedule[] = concept.memorize.items.map(
-      (item) => ({
+    const scheduleQueue: FlashcardSchedule[] = [];
+    
+    for (const item of concept.memorize.items) {
+      const existingSchedule = this.courseManager.getItemScheduling(session, concept.name, item);
+      
+      if (existingSchedule && existingSchedule.successCount >= 2) {
+        continue;
+      }
+      
+      scheduleQueue.push({
         item,
-        easeFactor: this.INITIAL_EASE,
-        interval: 0,
-        duePosition: 0,
-        successCount: 0,
-      })
-    );
+        easeFactor: existingSchedule?.easeFactor || this.INITIAL_EASE,
+        interval: existingSchedule?.interval || 0,
+        duePosition: existingSchedule?.nextDuePosition || 0,
+        successCount: existingSchedule?.successCount || 0,
+      });
+    }
+
+    if (scheduleQueue.length === 0) {
+      console.log(
+        chalk.green(
+          `\n🎉 All items in "${concept.name}" have already been mastered!\n`
+        )
+      );
+      return;
+    }
 
     while (scheduleQueue.length > 0) {
-      const nextCard = this.selectNextCard(scheduleQueue);
+      const nextCard = this.selectNextCard(scheduleQueue, session, concept.name);
       if (!nextCard) break;
 
       const evaluation = await this.askFlashcardQuestion(
@@ -63,7 +79,7 @@ export class MemorizationPhase {
         scheduleQueue
       );
 
-      this.positionCounter++;
+      const currentPosition = this.courseManager.incrementGlobalPosition(session, concept.name);
 
       const specialQuestionType = await this.determineSpecialQuestion(
         evaluation.comprehension,
@@ -100,12 +116,17 @@ export class MemorizationPhase {
     );
   }
 
-  private selectNextCard(queue: FlashcardSchedule[]): FlashcardSchedule | null {
+  private selectNextCard(
+    queue: FlashcardSchedule[],
+    session: LearningSession,
+    conceptName: string
+  ): FlashcardSchedule | null {
     const activeCards = queue.filter((card) => card.successCount < 2);
     if (activeCards.length === 0) return null;
 
+    const currentPosition = this.courseManager.getGlobalPosition(session, conceptName);
     const overdueCards = activeCards.filter(
-      (card) => card.duePosition <= this.positionCounter
+      (card) => card.duePosition <= currentPosition
     );
 
     if (overdueCards.length > 0) {
@@ -204,6 +225,7 @@ export class MemorizationPhase {
       session.existingUnderstanding
     );
 
+    const currentGlobalPosition = this.courseManager.getGlobalPosition(session, concept.name);
     const newEase = this.updateEaseFactor(
       evaluation.comprehension,
       schedule.easeFactor
@@ -215,7 +237,7 @@ export class MemorizationPhase {
 
     schedule.easeFactor = newEase;
     schedule.interval = newInterval;
-    schedule.duePosition = this.positionCounter + newInterval;
+    schedule.duePosition = currentGlobalPosition + newInterval;
 
     if (evaluation.comprehension >= 4) {
       console.log(chalk.green(`\n✅ ${evaluation.response}\n`));
@@ -258,11 +280,22 @@ export class MemorizationPhase {
       schedule.successCount = 0;
     }
 
-    await this.courseManager.updateItemProgress(session, concept.name, item, {
-      question: `Describe fields for ${item}: ${fields.join(", ")}`,
-      userAnswer: answer,
-      aiResponse: evaluation,
-    });
+    await this.courseManager.updateItemProgress(
+      session, 
+      concept.name, 
+      item, 
+      {
+        question: `Describe fields for ${item}: ${fields.join(", ")}`,
+        userAnswer: answer,
+        aiResponse: evaluation,
+      },
+      {
+        easeFactor: schedule.easeFactor,
+        interval: schedule.interval,
+        nextDuePosition: schedule.duePosition,
+        successCount: schedule.successCount
+      }
+    );
 
     if (!this.itemsCovered.includes(item)) {
       this.itemsCovered.push(item);
