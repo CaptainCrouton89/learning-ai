@@ -783,12 +783,8 @@ export const flashcardPrompts = {
     conceptName: string,
     fields: string[],
     existingUnderstanding: string
-  ) => `You are a patient educator helping learners master "${
-    conceptName
-  }" through flashcard practice.
-      The user needs to understand ALL fields: ${fields.join(
-        ", "
-      )}.
+  ) => `You are a patient educator helping learners master "${conceptName}" through flashcard practice.
+      The user needs to understand ALL fields: ${fields.join(", ")}.
       
       User's Existing Understanding: ${existingUnderstanding}
       
@@ -798,10 +794,6 @@ export const flashcardPrompts = {
       
       For EXCELLENT answers (score 5):
       ✓ Perfect understanding!
-      
-      **Advanced insight:** {Share something deeper they might not know}
-      
-      **Interesting connection:** {Link to related concept with example}
       
       For GOOD answers (score 4):
       ✓ Good grasp!
@@ -874,79 +866,28 @@ export const flashcardPrompts = {
     userAnswer: string,
     previousAttempts: Array<{ userAnswer: string; aiResponse: string }>
   ) => `Item: ${item}
-      Required fields: ${fields.join(", ")}
-      Current user answer: ${userAnswer}
-      
-      Previous attempts for this item:
-      ${
-        previousAttempts.length > 0
-          ? previousAttempts
-              .map(
-                (attempt, i) =>
-                  `Attempt ${i + 1}:
-        User: ${attempt.userAnswer}
-        AI Feedback: ${attempt.aiResponse}`
-              )
-              .join("\n\n")
-          : "None"
-      }
-      
-      Evaluate the current answer and provide insightful feedback that deepens understanding. Consider the previous attempts to avoid repeating feedback.`,
-};
+Required fields: ${fields.join(", ")}
 
-export const abstractPrompts = {
-  evaluationSystem: (conceptName: string) => `You are evaluating the user's synthesis and understanding of ${conceptName}.
-      Your goal is to encourage deeper thinking and make connections clear.
-      Be supportive while teaching important concepts.
-      
-      APPROACH:
-      - Acknowledge what they understood correctly
-      - Teach missing connections through explanation
-      - Use examples to illustrate abstract relationships
-      - Build on their existing knowledge`,
+<previous_attempts>
+${
+  previousAttempts.length > 0
+    ? previousAttempts
+        .map(
+          (attempt, i) =>
+            `Attempt ${i + 1}:
+  User: ${attempt.userAnswer}
+  AI Feedback: ${attempt.aiResponse}`
+        )
+        .join("\n\n")
+    : "None"
+}
+</previous_attempts>
 
-  userPrompt: (
-    question: string,
-    userAnswer: string,
-    allConcepts: string[]
-  ) => `Question: ${question}
-      User answer: ${userAnswer}
-      Concepts to connect: ${allConcepts.join(", ")}
-      
-      Response format based on understanding level:
-      
-      For strong answers:
-      **✓ Excellent synthesis!**
-      
-      **What you captured well:**
-      • {Specific insight they demonstrated}
-      • {Another good connection they made}
-      
-      **Additional perspective:** {Deeper connection or implication they might not have considered}
-      
-      For partial understanding:
-      **✓ Good thinking!**
-      
-      **What you got right:**
-      • {Acknowledge correct elements}
-      
-      **Let me expand on this:**
-      {Paragraph explaining the deeper connections and relationships}
-      
-      **Key insight:** {The critical connection explained clearly with example}
-      
-      For minimal understanding or "I don't know":
-      **Let me help you see these connections:**
-      
-      **The relationship here:**
-      {Full paragraph teaching how these concepts connect}
-      
-      **Think about it this way:**
-      {Analogy or example that makes the abstract concrete}
-      
-      **In practice:** {Real-world application showing the connection}
-      
-      **Key takeaway:** {Simple summary of the main relationship}`,
+<current_answer>
+${userAnswer}
+</current_answer>
+
+Evaluate the current answer and provide insightful feedback that deepens understanding. Consider the previous attempts to avoid repeating feedback.`,
 };
 
 export const connectionPrompts = {
@@ -973,6 +914,7 @@ export const connectionPrompts = {
       - Only add follow-up if score < 3`,
 };
 
+// used during memorization to request a deeper understanding of an item the user is struggling with
 export const elaborationPrompts = {
   evaluationSystem: (item: string, conceptName: string) =>
     `You are an expert educator helping learners understand the deeper "why" behind ${item} in ${conceptName}.
@@ -1013,6 +955,7 @@ export const elaborationPrompts = {
       Be educational and helpful, not just evaluative.`,
 };
 
+// used during memorization to request a connection between two items
 export const connectionQuestionPrompts = {
   evaluationSystem: (
     performingItem: string,
@@ -1052,6 +995,7 @@ export const connectionQuestionPrompts = {
       Be educational and helpful, showing how the items relate.`,
 };
 
+// used during memorization to request a high-level synthesis question
 export const highLevelEvaluationPrompts = {
   evaluationSystem: (
     conceptName: string,
@@ -1071,14 +1015,14 @@ export const highLevelEvaluationPrompts = {
       
       <difficulty-adjusted-evaluation>
       ${
-        existingUnderstanding === 'None - Complete beginner'
+        existingUnderstanding === "None - Complete beginner"
           ? `**For Beginners:**
       - Accept simpler pattern recognition as good synthesis
       - Praise basic comparisons and groupings
       - Provide more guidance and examples
       - Use everyday analogies to explain concepts
       - Break down complex ideas into simple parts`
-          : existingUnderstanding === 'Some - I know the basics'
+          : existingUnderstanding === "Some - I know the basics"
           ? `**For Intermediate Learners:**
       - Expect pattern analysis and trade-off recognition
       - Look for cause-and-effect understanding

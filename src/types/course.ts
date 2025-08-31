@@ -66,11 +66,6 @@ export interface ConceptProgress {
   conceptName: string;
   itemsProgress: Map<string, ItemProgress>;
   topicProgress: Map<string, TopicProgress>;
-  abstractQuestionsAsked: Array<{
-    question: string;
-    answer: string;
-    timestamp: Date;
-  }>;
   specialQuestionsAsked: Array<SpecialQuestion>;
   globalPositionCounter: number;
 }

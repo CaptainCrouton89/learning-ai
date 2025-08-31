@@ -6,7 +6,6 @@ import {
   conceptLearningPrompts,
   highLevelPrompts,
   flashcardPrompts,
-  abstractPrompts,
   connectionPrompts,
   elaborationPrompts,
   connectionQuestionPrompts,
@@ -232,24 +231,6 @@ Provide substantive feedback that advances their understanding, then ask a speci
     return object;
   }
 
-  async evaluateAbstractAnswer(
-    question: string,
-    userAnswer: string,
-    concept: Concept,
-    allConcepts: Concept[]
-  ): Promise<string> {
-    const { text } = await generateText({
-      model: this.model,
-      system: abstractPrompts.evaluationSystem(concept.name),
-      prompt: abstractPrompts.userPrompt(
-        question,
-        userAnswer,
-        allConcepts.map((c) => c.name)
-      ),
-    });
-
-    return text;
-  }
 
   async evaluateConnectionAnswer(
     question: string,

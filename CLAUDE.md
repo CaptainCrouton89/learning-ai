@@ -62,7 +62,6 @@ The application implements a structured 5-phase learning system as defined in `l
 - Tracks progress per concept and item with success counts
 - Sessions store conversation history, current phase, and timing
 - Handles serialization/deserialization of Map structures for persistence
-- Manages abstract questions tracking to avoid repetition
 
 ### Phase Implementation Pattern
 
@@ -80,13 +79,12 @@ Each phase class (`src/phases/`) follows this pattern:
 2. Phases handle user interaction and call AIService
 3. AIService makes OpenAI API calls with appropriate prompts
 4. CourseManager persists all state changes
-5. Abstract questions are inserted every 10 flashcard questions
-6. Session can be resumed from any phase
+5. Session can be resumed from any phase
 
 ### Key Implementation Details
 
 - **Flashcard System**: Random order on each iteration, 2 successes needed for mastery
-- **Abstract Questions**: Mixed in every 10 flashcard questions, tracks previously asked
+- **Special Questions**: Elaboration, connection, and high-level questions triggered based on performance
 - **Comprehension Scoring**: 0-5 scale, 4+ counts as success, topic-based tracking
 - **Progress Tracking**: Items, topics, and concept-level progress with timestamps
 - **Session Management**: Conversation history, phase state, resume capability

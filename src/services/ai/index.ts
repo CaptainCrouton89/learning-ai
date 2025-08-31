@@ -160,31 +160,6 @@ export class AIService {
     );
   }
 
-  async generateAbstractQuestion(
-    concept: Concept,
-    allConcepts: Concept[],
-    previousQuestions: string[]
-  ): Promise<string> {
-    return this.generationService.generateAbstractQuestion(
-      concept,
-      allConcepts,
-      previousQuestions
-    );
-  }
-
-  async evaluateAbstractAnswer(
-    question: string,
-    userAnswer: string,
-    concept: Concept,
-    allConcepts: Concept[]
-  ): Promise<string> {
-    return this.evaluationService.evaluateAbstractAnswer(
-      question,
-      userAnswer,
-      concept,
-      allConcepts
-    );
-  }
 
   async generateConnectionQuestion(
     connections: string[],

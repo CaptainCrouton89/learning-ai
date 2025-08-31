@@ -164,7 +164,6 @@ export class CourseManager {
         conceptName,
         itemsProgress: new Map(),
         topicProgress: new Map(),
-        abstractQuestionsAsked: [],
         specialQuestionsAsked: [],
         globalPositionCounter: 0
       });
@@ -204,33 +203,6 @@ export class CourseManager {
     await this.saveSession(session);
   }
 
-  async addAbstractQuestion(
-    session: LearningSession,
-    conceptName: string,
-    question: string,
-    answer: string
-  ): Promise<void> {
-    if (!session.conceptsProgress.has(conceptName)) {
-      session.conceptsProgress.set(conceptName, {
-        conceptName,
-        itemsProgress: new Map(),
-        topicProgress: new Map(),
-        abstractQuestionsAsked: [],
-        specialQuestionsAsked: [],
-        globalPositionCounter: 0
-      });
-    }
-
-    const conceptProgress = session.conceptsProgress.get(conceptName)!;
-    conceptProgress.abstractQuestionsAsked.push({
-      question,
-      answer,
-      timestamp: new Date()
-    });
-
-    session.lastActivityTime = new Date();
-    await this.saveSession(session);
-  }
 
   isItemMastered(session: LearningSession, conceptName: string, itemName: string): boolean {
     const conceptProgress = session.conceptsProgress.get(conceptName);
@@ -264,7 +236,6 @@ export class CourseManager {
         conceptName,
         itemsProgress: new Map(),
         topicProgress: new Map(),
-        abstractQuestionsAsked: [],
         specialQuestionsAsked: [],
         globalPositionCounter: 0
       });
