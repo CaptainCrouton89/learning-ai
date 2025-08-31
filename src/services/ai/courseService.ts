@@ -11,6 +11,7 @@ import { ConceptDetailSchema, CourseGenerationSchema } from "./schemas.js";
 
 export class CourseService {
   private smartModel = openai("gpt-5");
+  private lightSmartModel = openai("gpt-5-mini");
   private fastModel = openai("gpt-4.1-mini");
 
   async analyzeTopic(
@@ -73,6 +74,11 @@ export class CourseService {
       model: this.smartModel,
       schema: CourseGenerationSchema,
       system: coursePrompts.system,
+      providerOptions: {
+        openai: {
+          reasoning_effort: "medium",
+        },
+      },
       prompt: coursePrompts.userPrompt(
         topic,
         documentContent,
@@ -85,7 +91,7 @@ export class CourseService {
     const conceptDetails = await Promise.all(
       courseBase.concepts.map(async (concept) => {
         const { object: details } = await generateObject({
-          model: this.smartModel,
+          model: this.lightSmartModel,
           schema: ConceptDetailSchema,
           system: conceptDetailPrompts.system,
           prompt: conceptDetailPrompts.userPrompt(
