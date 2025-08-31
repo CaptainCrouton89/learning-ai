@@ -6,144 +6,118 @@ export const connectionQuestionPrompts = {
     conceptName: string
   ) =>
     `<role>
-You are an expert educational psychologist specializing in analogical reasoning and knowledge transfer within the domain of ${conceptName}.
+You are an expert in ${conceptName} specializing in analogical reasoning and knowledge transfer.
 </role>
 
 <task>
-Generate a targeted connection question that leverages the learner's strong understanding of "${performingItem}" to illuminate their struggling concept "${strugglingItem}".
+Generate a connection question that uses the learner's mastery of "${performingItem}" to clarify "${strugglingItem}".
 </task>
 
-<context>
-- Mastered concept: ${performingItem} (learner demonstrates consistent comprehension)
-- Struggling concept: ${strugglingItem} (learner shows difficulty retaining or understanding)
-- Learning domain: ${conceptName}
-</context>
-
 <requirements>
-1. The question must explicitly bridge these two specific concepts
-2. Focus on concrete, observable relationships rather than abstract comparisons
-3. Activate prior knowledge of ${performingItem} to scaffold understanding
-4. Target the specific aspects of ${strugglingItem} that are most challenging
-5. Use cognitive bridging techniques (analogy, contrast, or structural mapping)
+1. Bridge the two concepts explicitly
+2. Focus on concrete, observable relationships
+3. Use ${performingItem} to scaffold understanding
+4. Apply cognitive bridging (analogy, contrast, or structural mapping)
 </requirements>`,
 
   generationPrompt: (performingItem: string, strugglingItem: string) =>
     `<input>
-Well-known item: ${performingItem}
-Struggling item: ${strugglingItem}
+Mastered: ${performingItem}
+Struggling: ${strugglingItem}
 </input>
 
 <question-types>
-Select the most pedagogically appropriate question type:
+Choose one approach:
 
-1. STRUCTURAL MAPPING:
-   "What specific mechanism in ${performingItem} works similarly to [specific aspect] in ${strugglingItem}?"
-
-2. CONTRASTIVE ANALYSIS:
-   "While ${performingItem} achieves [outcome] through [method A], how does ${strugglingItem} achieve a similar result differently?"
-
-3. CAUSAL RELATIONSHIP:
-   "How does your understanding of [specific principle] in ${performingItem} explain why ${strugglingItem} behaves the way it does?"
-
-4. FUNCTIONAL ANALOGY:
-   "If ${performingItem} serves the role of [function] in [context], what equivalent role does ${strugglingItem} play?"
-
-5. PROGRESSIVE COMPLEXITY:
-   "How does ${strugglingItem} extend or modify the core principle you learned in ${performingItem}?"
+1. STRUCTURAL: "What mechanism in ${performingItem} works similarly to [aspect] in ${strugglingItem}?"
+2. CONTRAST: "How does ${strugglingItem} achieve [outcome] differently than ${performingItem}?"
+3. CAUSAL: "How does [principle] in ${performingItem} explain ${strugglingItem}'s behavior?"
+4. FUNCTIONAL: "What equivalent role does ${strugglingItem} play compared to ${performingItem}?"
+5. EXTENSION: "How does ${strugglingItem} extend the principle from ${performingItem}?"
 </question-types>
 
-<output-requirements>
-- Make the question specific to actual properties of both items
-- Include concrete details that demonstrate domain knowledge
-- Frame the question to activate existing mental models
-- Ensure the answer would genuinely help understand the struggling concept
-- Avoid generic comparisons like "How are they similar?"
-</output-requirements>`,
+<requirements>
+- Use specific properties of both items
+- Include concrete details
+- Activate existing mental models
+- Avoid generic comparisons
+</requirements>`,
   evaluationSystem: (
     performingItem: string,
     strugglingItem: string,
     conceptName: string
   ) => `<role>
-You are a master teacher specializing in ${conceptName}, skilled at using analogical reasoning to clarify complex concepts through connections to familiar knowledge.
+You are a ${conceptName} expert using analogical reasoning to clarify concepts through familiar knowledge.
 </role>
 
 <task>
-Evaluate the learner's attempt to connect ${performingItem} (mastered) with ${strugglingItem} (struggling), then provide targeted scaffolding.
+Evaluate the connection between ${performingItem} (mastered) and ${strugglingItem} (struggling).
 </task>
 
-<evaluation-criteria>
-Score the response on a 0-5 scale based on:
+<scoring>
+5 - Articulates precise relationships with domain accuracy
+4 - Correct connection with minor gaps
+3 - Partial understanding, misses key relationships
+2 - Fundamental misconceptions
+1 - Vague or incorrect attempt
+0 - No meaningful connection
+</scoring>
 
-5 - COMPLETE MASTERY: Articulates precise structural/functional relationships with domain-specific accuracy
-4 - STRONG UNDERSTANDING: Identifies correct connection with minor gaps in explanation
-3 - DEVELOPING: Shows partial understanding but misses key relationships
-2 - STRUGGLING: Attempts connection but contains fundamental misconceptions
-1 - MINIMAL: Vague or incorrect connection attempt
-0 - NO ATTEMPT: No meaningful connection made
-</evaluation-criteria>
+<response-for-low-scores>
+For scores 0-3:
 
-<response-framework>
-For scores 0-3, provide structured remediation:
+## Bridge Concept
+What they know about ${performingItem}: [property/behavior]
 
-<connection-explanation>
-## Let me illuminate this connection:
+## Transfer
+How this relates to ${strugglingItem}: [explicit connection]
 
-### The Bridge Concept
-Start with what they know about ${performingItem}: [specific property/behavior]
+## Key Insight
+Shared principle: [underlying concept]
 
-### The Transfer
-This directly relates to ${strugglingItem} because: [explicit connection with cause-effect]
+## Distinction
+${performingItem} vs ${strugglingItem}: [precise difference]
 
-### Key Insight
-The fundamental principle both share: [underlying concept that unifies them]
+## Mental Model
+Think of ${strugglingItem} as ${performingItem} [transformation]
+</response-for-low-scores>
 
-### Critical Distinction
-While ${performingItem} [specific behavior], ${strugglingItem} differs by: [precise difference]
-
-### Mental Model
-Think of ${strugglingItem} as ${performingItem} that has been [specific transformation/adaptation]
-
-### Application Rule
-When you encounter ${strugglingItem}, remember: [concrete heuristic based on ${performingItem}]
-</connection-explanation>
-
-For scores 4-5, provide reinforcement:
-- Acknowledge specific insights they demonstrated
-- Extend their understanding with advanced connections
-- Suggest how this connection applies to other concepts
-</response-framework>`,
+<response-for-high-scores>
+For scores 4-5:
+- Acknowledge insights
+- Extend understanding
+- Connect to other concepts
+</response-for-high-scores>`,
 
   userPrompt: (
     question: string,
     performingItem: string,
     strugglingItem: string,
     userAnswer: string
-  ) => `<connection-task>
-Question asked: ${question}
-Known concept: ${performingItem}
-Struggling concept: ${strugglingItem}
-</connection-task>
+  ) => `<context>
+Question: ${question}
+Mastered: ${performingItem}
+Struggling: ${strugglingItem}
+</context>
 
-<learner-response>
+<response>
 ${userAnswer}
-</learner-response>
+</response>
 
-<evaluation-instructions>
-1. ASSESS comprehension level (0-5 scale)
-2. IDENTIFY specific misconceptions or gaps
-3. DETERMINE if the learner made a valid connection
+<instructions>
+1. Score comprehension (0-5)
+2. Identify misconceptions
 
 If score ≤ 3:
-- SCAFFOLD understanding using ${performingItem} as the foundation
-- EXPLAIN the connection with concrete, domain-specific examples
-- BUILD a bridge from their existing knowledge to the new concept
-- PROVIDE a memorable framework for retaining the connection
+- Use ${performingItem} to scaffold understanding
+- Provide concrete examples
+- Build knowledge bridge
 
 If score ≥ 4:
-- VALIDATE their correct understanding
-- REINFORCE with additional nuances
-- EXTEND to related concepts if appropriate
+- Validate understanding
+- Add nuances
+- Extend to related concepts
 
-Critical: Your explanation must explicitly use properties of ${performingItem} that the learner already understands to illuminate specific aspects of ${strugglingItem}.
-</evaluation-instructions>`,
+Use ${performingItem} properties to illuminate ${strugglingItem}.
+</instructions>`,
 };

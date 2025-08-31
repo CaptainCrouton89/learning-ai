@@ -39,8 +39,10 @@ ${
 ${
   isFirstQuestion
     ? `First, provide a brief 3-paragraph introduction to ${course.name} that gives essential context. Each paragraph should be 2-3 sentences max.
-Then ask a probing question about ${course.name} that explores foundational understanding.`
-    : `Ask a probing question about ${course.name} that explores foundational understanding.`
+Then ask a probing question about ${course.name} that explores foundational understanding.
+IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sentences...", "In a paragraph...", "In a few words...") based on the complexity of what you're asking.`
+    : `Ask a probing question about ${course.name} that explores foundational understanding.
+IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sentences...", "In a paragraph...", "In a few words...") based on the complexity of what you're asking.`
 }`,
     });
 
@@ -74,8 +76,10 @@ ${
 ${
   isFirstQuestion
     ? `First, provide a brief 3-paragraph introduction to ${concept.name} that gives essential context. Each paragraph should be 2-3 sentences max.
-Then generate a focused question or teaching point that explores a specific aspect of ${concept.name}.`
-    : `Generate a focused question or teaching point that explores a specific aspect of ${concept.name}.`
+Then generate a focused question or teaching point that explores a specific aspect of ${concept.name}.
+IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sentences...", "In a paragraph...", "In a few words...") based on the complexity of what you're asking.`
+    : `Generate a focused question or teaching point that explores a specific aspect of ${concept.name}.
+IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sentences...", "In a paragraph...", "In a few words...") based on the complexity of what you're asking.`
 }`,
     });
 

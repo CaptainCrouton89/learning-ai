@@ -1,50 +1,47 @@
 export const topicRefinementPrompts = {
   system: `<role>
-You are an expert learning consultant helping learners define the perfect scope for their learning session.
+Expert learning consultant specializing in scoping educational goals.
 </role>
 
 <objective>
-Guide the learner to a well-defined, achievable learning goal that fits their time and understanding level.
+Refine learning topics to match available time and learner background.
 </objective>
 
-<refinement-principles>
-1. **Time-Aware Scoping**: Ensure the topic scope matches available time
-2. **Specificity**: Move from vague to specific, actionable topics
-3. **Learner-Centric**: Adapt to their existing knowledge and goals
-4. **Practical Focus**: Identify what they actually need to learn
-5. **Boundary Setting**: Clearly define what's included and excluded
-</refinement-principles>
+<principles>
+1. Time-aware scoping
+2. Vague → specific topics
+3. Match existing knowledge
+4. Define clear boundaries
+</principles>
 
-<time-based-complexity>
-- 15 minutes: Need extremely focused, single-aspect topics
-- 30 minutes: Can handle a narrow topic with 2-3 facets
-- 1 hour: Can explore a topic with some breadth
-- 2+ hours: Can dive deep into complex topics
-</time-based-complexity>`,
+<time-complexity>
+15 min: Single focused aspect
+30 min: Narrow topic (2-3 facets)
+1 hour: Moderate breadth
+2+ hours: Complex deep-dive
+</time-complexity>`,
 
   analyzeTopicPrompt: (
     topic: string,
     timeAvailable: string,
     existingUnderstanding: string
   ) => `<context>
-User wants to learn: "${topic}"
-Time available: ${timeAvailable}
-Existing understanding: ${existingUnderstanding}
+Topic: "${topic}"
+Time: ${timeAvailable}
+Background: ${existingUnderstanding}
 </context>
 
 <task>
-Analyze if this topic is appropriately scoped for the time available.
+Assess scope appropriateness. Micro sessions (<15 min) need extreme focus.
 
-For micro sessions (<15 min), be EXTREMELY aggressive about narrowing scope.
-For quick sessions (15-60 min), still require significant focus.
-
-Examples:
-<15 min: "Machine learning" → "What is a neural network?"
-15-60 min: "Machine learning" → "Neural network basics and activation functions"
-<15 min: "Wine" → "Understanding wine sweetness levels"
-15-60 min: "Wine" → "Wine structure: sweetness, acidity, and tannins"
-<15 min: "Design patterns" → "When to use Factory pattern"
-15-60 min: "Design patterns" → "Factory and Builder patterns"
+<examples>
+"Machine learning" → "What is a neural network?" (15 min)
+"Machine learning" → "Neural network basics and activation functions" (30-60 min)
+"Wine" → "Understanding wine sweetness levels" (15 min)
+"Wine" → "Wine structure: sweetness, acidity, tannins" (30-60 min)
+"Design patterns" → "When to use Factory pattern" (15 min)
+"Design patterns" → "Factory and Builder patterns" (30-60 min)
+</examples>
 </task>`,
 
   generateFollowUpPrompt: (
@@ -52,18 +49,18 @@ Examples:
     userResponse: string,
     timeAvailable: string
   ) => `<context>
-Original topic: "${originalTopic}"
-User's clarification: "${userResponse}"
-Time available: ${timeAvailable}
+Original: "${originalTopic}"
+Clarification: "${userResponse}"
+Time: ${timeAvailable}
 </context>
 
 <task>
-Based on the user's response, suggest a final refined topic that:
-1. Incorporates their specific interests
-2. Fits perfectly within ${timeAvailable}
-3. Has clear learning outcomes
-4. Is neither too broad nor too narrow
+Suggest refined topic that:
+1. Incorporates user interests
+2. Fits within ${timeAvailable}
+3. Has clear outcomes
+4. Appropriate scope
 
-Provide a single, well-defined topic string that will be used for course generation.
+Return single topic string for course generation.
 </task>`,
 };

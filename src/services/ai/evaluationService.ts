@@ -73,7 +73,7 @@ export class EvaluationService {
           topicsToTeach,
           existingUnderstanding,
           progressSummary
-        ),
+        ) + "\n\nREMEMBER: Always include response length guidance in your follow-up questions (e.g., 'In 2-3 sentences...', 'In a paragraph...', 'In a few words...').",
       },
     ];
 
@@ -153,7 +153,7 @@ export class EvaluationService {
           highLevelTopics,
           unmasteredTopics,
           existingUnderstanding
-        ),
+        ) + "\n\nREMEMBER: Always include response length guidance in your follow-up questions (e.g., 'In 2-3 sentences...', 'In a paragraph...', 'In a few words...').",
       },
     ];
 

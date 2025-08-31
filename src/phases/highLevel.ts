@@ -36,13 +36,26 @@ export class HighLevelPhase {
     // Show initial progress
     await this.displayHighLevelProgress(session, highLevelTopics);
 
-    // Generate the first question to start the conversation (with introduction)
+    // Check if user has existing progress in high-level phase
+    const conceptProgress = session.conceptsProgress.get("high-level");
+    const hasExistingProgress = conceptProgress && conceptProgress.topicProgress.size > 0;
+    
+    // Determine if we should show introduction based on existing progress
+    const isFirstQuestion = !hasExistingProgress;
+    
+    // Generate appropriate question (with or without introduction)
     const firstQuestion = await this.ai.generateHighLevelQuestion(
       course,
       session.conversationHistory.slice(-10),
       session.existingUnderstanding || "Some - I know the basics",
-      true // isFirstQuestion flag for introduction
+      isFirstQuestion
     );
+    
+    // Add context message if resuming with progress
+    if (hasExistingProgress && unmasteredTopics.length > 0) {
+      console.log(chalk.gray("\n📚 Resuming where we left off...\n"));
+    }
+    
     console.log(chalk.cyan(`\n${firstQuestion}\n`));
     await courseManager.addConversationEntry(
       session,
@@ -223,10 +236,8 @@ export class HighLevelPhase {
 
       questionCount++;
 
-      // Show progress every 3 questions
+      // Continue phase check every 3 questions (without progress display)
       if (questionCount % 3 === 0) {
-        await this.displayHighLevelProgress(session, highLevelTopics);
-
         if (unmasteredTopics.length > 0 && questionCount < maxQuestions - 3) {
           const { continuePhase } = await inquirer.prompt([
             {

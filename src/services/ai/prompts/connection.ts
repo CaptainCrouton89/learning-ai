@@ -1,100 +1,92 @@
 export const connectionPrompts = {
   evaluationSystem: (courseName: string, existingUnderstanding: string) =>
-    `Evaluate the user's synthesis of concepts in ${courseName}.
-      Be DIRECT and specific about their understanding.
-      Provide concrete feedback with facts.
+    `Evaluate synthesis in ${courseName}.
+      User Level: ${existingUnderstanding}
       
-      User's Existing Understanding: ${existingUnderstanding}
-      
-      STRUCTURE:
-      1. ✓ Correct or ❌ Incorrect/Incomplete assessment
-      2. Bullet points of what they should understand
-      3. Key insight or principle
-      4. Optional follow-up if answer was particularly weak`,
+      Format:
+      1. ✓ Correct or ❌ Incorrect
+      2. Missing points (bullets)
+      3. Key principle
+      4. Follow-up if score < 3`,
 
   userPrompt: (question: string, userAnswer: string) => `Question: ${question}
-      User answer: ${userAnswer}
+      Answer: ${userAnswer}
       
-      Provide direct feedback:
-      - Start with ✓ or ❌
-      - List specific facts they missed
-      - End with key principle
-      - Only add follow-up if score < 3`,
+      Feedback:
+      - ✓ or ❌
+      - Missing facts
+      - Key principle
+      - Follow-up if weak`,
 
   generationSystem: (
     courseName: string,
     connections: string[],
     previousQuestions: Array<{ question: string; answer: string }>,
     existingUnderstanding: string
-  ) => `<role>
-You are an expert educator creating scenario-based synthesis questions for ${courseName}.
-</role>
-
-<user-level>
-Existing Understanding: ${existingUnderstanding}
-</user-level>
-
-<objective>
+  ) => `<context>
+Course: ${courseName}
+User Level: ${existingUnderstanding}
 Create ${
   existingUnderstanding === "None - Complete beginner"
-    ? "approachable scenarios that help beginners see connections"
+    ? "approachable"
     : existingUnderstanding === "Some - I know the basics"
-    ? "challenging scenarios that require integrating knowledge"
-    : "complex, nuanced scenarios with multiple trade-offs"
-} between concepts to solve real problems.
-</objective>
+    ? "challenging"
+    : "complex"
+} scenarios that connect concepts.
+</context>
 
-<scenario-design-principles>
+<principles>
 ${
   existingUnderstanding === "None - Complete beginner"
-    ? `1. **Start with Relatable Situations**: "Imagine you need to..." or "A friend asks you..."
-2. **Provide Clear Context**: Explain any technical terms in the scenario
-3. **Focus on Fundamental Trade-offs**: "Would you choose X or Y and why?"
-4. **Guide Thinking Process**: "Consider how [concept A] affects [concept B]"`
+    ? `- Relatable situations
+- Clear context
+- Basic trade-offs
+- Guided thinking`
     : existingUnderstanding === "Some - I know the basics"
-    ? `1. **Present Realistic Problems**: "Your team encounters..." or "A project requires..."
-2. **Include Multiple Constraints**: Time, budget, technical limitations
-3. **Require Prioritization**: "Given these constraints, what's most important?"
-4. **Test Applied Knowledge**: "How would you implement X while considering Y?"`
-    : `1. **Complex Professional Scenarios**: "As the lead architect..." or "The CEO asks you..."
-2. **Multiple Competing Factors**: Political, technical, financial, strategic
-3. **Demand Strategic Thinking**: "What's your 3-phase approach?"
-4. **Test Edge Cases**: "What if the usual approach fails?"
-5. **Require Innovation**: "How would you solve this unprecedented challenge?"`
+    ? `- Realistic problems
+- Multiple constraints
+- Prioritization required
+- Applied knowledge`
+    : `- Professional scenarios
+- Competing factors
+- Strategic thinking
+- Edge cases
+- Innovation required`
 }
-</scenario-design-principles>
+</principles>
 
 <avoid>
-- Generic "explain how X relates to Y" questions
-- Scenarios with obvious solutions
-- Questions that can be answered by listing facts
-- Hypotheticals without specific constraints
+- Generic "explain X relates to Y"
+- Obvious solutions
+- Fact-listing answers
+- Vague hypotheticals
 </avoid>`,
 
   generationPrompt: (
     connections: string[],
     previousQuestions: Array<{ question: string; answer: string }>
-  ) => `<context>
-Key topics to connect: ${connections.join(", ")}
-Previous scenarios covered: ${previousQuestions
-    .map((q) => q.question)
-    .slice(0, 3)
-    .join("; ")}
-</context>
+  ) => `<topics>
+${connections.join(", ")}
+</topics>
 
-<task>
-Create a SPECIFIC scenario that:
-1. Presents a realistic problem or decision point
-2. Requires synthesizing at least 2-3 of the connection topics
-3. Has multiple valid approaches with different trade-offs
-4. Cannot be solved with textbook knowledge alone
+<previous>
+${previousQuestions.map((q) => q.question).slice(0, 3).join("; ")}
+</previous>
 
-Structure:
-1. Set up a concrete scenario (2-3 sentences)
-2. Present a specific challenge or decision
-3. Ask for analysis with constraints (e.g., "Given limited time, which TWO factors would you prioritize?")
+<requirements>
+- Real problem/decision
+- Synthesize 2-3 topics
+- Multiple valid approaches
+- Beyond textbook knowledge
+</requirements>
 
-Example format:
-"You're evaluating two wines for a restaurant's house selection. Wine A has high acidity and moderate tannins, while Wine B has low acidity but bold tannins. Your menu is seafood-focused but you need versatility. Which wine would you choose and why? Consider food pairing principles, customer preferences, and aging potential in your analysis."
-</task>`,
+<format>
+1. Concrete scenario (2-3 sentences)
+2. Specific challenge
+3. Constrained analysis question
+</format>
+
+<example>
+"You're evaluating two wines for a restaurant. Wine A: high acidity, moderate tannins. Wine B: low acidity, bold tannins. Seafood-focused menu needs versatility. Which wine and why? Consider pairing, preferences, aging."
+</example>`,
 };
