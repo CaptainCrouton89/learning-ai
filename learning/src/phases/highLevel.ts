@@ -1,9 +1,9 @@
 import chalk from "chalk";
 import inquirer from "inquirer";
-import { AIService } from "../services/ai/index.js";
-import { CourseManager } from "../services/courseManager.js";
-import { ConceptAttempt, Course, LearningSession } from "../types/course.js";
-import { createProgressBar, displayProgressSection } from "../utils/progressBar.js";
+import { AIService } from "../services/ai/index";
+import { CourseManager } from "../services/courseManager";
+import { ConceptAttempt, Course, LearningSession } from "../types/course";
+import { createProgressBar, displayProgressSection } from "../utils/progressBar";
 
 export class HighLevelPhase {
   private ai = new AIService();

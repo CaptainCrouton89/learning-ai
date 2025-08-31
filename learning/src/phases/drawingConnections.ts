@@ -1,8 +1,8 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import { AIService } from '../services/ai/index.js';
-import { CourseManager } from '../services/courseManager.js';
-import { Course, LearningSession } from '../types/course.js';
+import { AIService } from '../services/ai/index';
+import { CourseManager } from '../services/courseManager';
+import { Course, LearningSession } from '../types/course';
 
 export class DrawingConnectionsPhase {
   private ai = new AIService();

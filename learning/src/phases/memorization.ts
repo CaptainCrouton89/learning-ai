@@ -1,13 +1,13 @@
 import chalk from "chalk";
 import inquirer from "inquirer";
-import { AIService } from "../services/ai/index.js";
-import { CourseManager } from "../services/courseManager.js";
+import { AIService } from "../services/ai/index";
+import { CourseManager } from "../services/courseManager";
 import {
   Concept,
   Course,
   FlashcardSchedule,
   LearningSession,
-} from "../types/course.js";
+} from "../types/course";
 
 export class MemorizationPhase {
   private ai = new AIService();

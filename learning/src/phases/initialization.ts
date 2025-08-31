@@ -2,9 +2,9 @@ import chalk from "chalk";
 import { promises as fs } from "fs";
 import inquirer from "inquirer";
 import ora from "ora";
-import { AIService } from "../services/ai/index.js";
-import { CourseManager } from "../services/courseManager.js";
-import { Course } from "../types/course.js";
+import { AIService } from "../services/ai/index";
+import { CourseManager } from "../services/courseManager";
+import { Course } from "../types/course";
 
 export class InitializationPhase {
   private ai = new AIService();

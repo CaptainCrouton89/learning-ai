@@ -1,103 +1,129 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useCourse } from "@/hooks/useCourse";
+import { useLearning } from "@/contexts/LearningContext";
+import { BookOpen, Plus, Play, Trash2 } from "lucide-react";
+
+export default function HomePage() {
+  const router = useRouter();
+  const { courses, isLoading, loadCourses, deleteCourse } = useCourse();
+  const { setCurrentCourse, setCurrentSession } = useLearning();
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
+
+  const handleStartNew = () => {
+    setCurrentCourse(null);
+    setCurrentSession(null);
+    router.push("/learn/new");
+  };
+
+  const handleResumeCourse = async (courseId: string) => {
+    router.push(`/learn/${courseId}`);
+  };
+
+  const handleDeleteCourse = async (courseId: string) => {
+    if (confirm("Are you sure you want to delete this course?")) {
+      await deleteCourse(courseId);
+    }
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-8 max-w-6xl">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">AI Learning App</h1>
+          <p className="text-muted-foreground">
+            Personalized AI-powered learning experience tailored to your needs
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="grid gap-6">
+          {/* New Course Card */}
+          <Card className="border-dashed">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="h-5 w-5" />
+                Start New Learning Journey
+              </CardTitle>
+              <CardDescription>
+                Create a personalized course based on your interests and available time
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={handleStartNew} size="lg" className="w-full sm:w-auto">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Create New Course
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Existing Courses */}
+          {isLoading ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Loading courses...</p>
+            </div>
+          ) : courses.length > 0 ? (
+            <>
+              <h2 className="text-2xl font-semibold mt-4">Your Courses</h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {courses.map((course) => (
+                  <Card key={course.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <CardTitle className="line-clamp-2">{course.name}</CardTitle>
+                      <CardDescription className="line-clamp-2">
+                        {course.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="mb-4">
+                        <p className="text-sm text-muted-foreground">
+                          {course.concepts.length} concepts • {course.timeEstimate}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleResumeCourse(course.id)}
+                          className="flex-1"
+                        >
+                          <Play className="mr-2 h-4 w-4" />
+                          Resume
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleDeleteCourse(course.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="text-center py-12">
+                <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No courses yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Start your learning journey by creating your first course
+                </p>
+                <Button onClick={handleStartNew}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Your First Course
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

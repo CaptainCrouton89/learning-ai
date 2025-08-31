@@ -1,12 +1,12 @@
 import { openai } from "@ai-sdk/openai";
 import { generateObject, generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
-import { Concept, Course } from "../../types/course.js";
-import { conceptLearningPrompts, highLevelPrompts } from "./prompts.js";
+import { Concept, Course } from "../../types/course";
+import { conceptLearningPrompts, highLevelPrompts } from "./prompts";
 import {
   ConceptAnswerEvaluationSchema,
   FlashcardResponseSchema,
-} from "./schemas.js";
+} from "./schemas";
 
 export class EvaluationService {
   private model = openai("gpt-5-mini");

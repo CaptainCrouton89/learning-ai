@@ -1,14 +1,14 @@
 import chalk from "chalk";
 import inquirer from "inquirer";
-import { AIService } from "../services/ai/index.js";
-import { CourseManager } from "../services/courseManager.js";
+import { AIService } from "../services/ai/index";
+import { CourseManager } from "../services/courseManager";
 import {
   Concept,
   ConceptAttempt,
   Course,
   LearningSession,
-} from "../types/course.js";
-import { createProgressBar, displayProgressSection } from "../utils/progressBar.js";
+} from "../types/course";
+import { createProgressBar, displayProgressSection } from "../utils/progressBar";
 
 export class ConceptLearningPhase {
   private ai = new AIService();
@@ -313,7 +313,7 @@ export class ConceptLearningPhase {
     ]);
 
     if (readyForFlashcards) {
-      const { MemorizationPhase } = await import("./memorization.js");
+      const { MemorizationPhase } = await import("./memorization");
       const memorizationPhase = new MemorizationPhase();
       await memorizationPhase.start(concept, course, session);
     }

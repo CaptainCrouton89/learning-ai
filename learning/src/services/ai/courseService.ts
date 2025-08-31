@@ -1,8 +1,8 @@
 import { openai } from "@ai-sdk/openai";
 import { generateObject, generateText } from "ai";
-import { Course } from "../../types/course.js";
-import { ConceptDetailSchema, CourseGenerationSchema } from "./schemas.js";
-import { conceptDetailPrompts, coursePrompts, topicRefinementPrompts } from "./prompts.js";
+import { Course } from "../../types/course";
+import { ConceptDetailSchema, CourseGenerationSchema } from "./schemas";
+import { conceptDetailPrompts, coursePrompts, topicRefinementPrompts } from "./prompts";
 import { z } from "zod";
 
 export class CourseService {

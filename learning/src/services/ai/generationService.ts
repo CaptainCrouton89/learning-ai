@@ -1,7 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
-import { Concept, Course } from "../../types/course.js";
-import { conceptLearningPrompts, highLevelPrompts } from "./prompts.js";
+import { Concept, Course } from "../../types/course";
+import { conceptLearningPrompts, highLevelPrompts } from "./prompts";
 
 export class GenerationService {
   private model = openai("gpt-5-mini");

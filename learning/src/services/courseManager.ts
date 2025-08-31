@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { Course, LearningSession, ConceptProgress, ItemProgress, TopicProgress, ConceptAttempt, SpecialQuestion } from '../types/course.js';
+import { Course, LearningSession, ConceptProgress, ItemProgress, TopicProgress, ConceptAttempt, SpecialQuestion } from '../types/course';
 
 export class CourseManager {
   private coursesDir = path.join(process.cwd(), 'courses');
