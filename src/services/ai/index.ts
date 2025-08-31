@@ -11,7 +11,7 @@ export class AIService {
   private courseService = new CourseService();
   private generationService = new GenerationService();
   private evaluationService = new EvaluationService();
-  private fastModel = openai("gpt-5-mini");
+  private fastModel = openai("gpt-4.1-mini");
 
   async analyzeTopic(
     topic: string,
@@ -191,12 +191,16 @@ export class AIService {
   async generateElaborationQuestion(
     item: string,
     fields: string[],
-    concept: Concept
+    concept: Concept,
+    userAnswer?: string,
+    evaluation?: string
   ): Promise<string> {
     return this.generationService.generateElaborationQuestion(
       item,
       fields,
-      concept
+      concept,
+      userAnswer,
+      evaluation
     );
   }
 
@@ -215,12 +219,16 @@ export class AIService {
   async generateHighLevelRecall(
     concept: Concept,
     itemsCovered: string[],
-    existingUnderstanding: string
+    existingUnderstanding: string,
+    weakTopics?: Array<{ topic: string; comprehension: number }>,
+    strugglingItems?: Array<{ item: string; averageComprehension: number }>
   ): Promise<string> {
     return this.generationService.generateHighLevelRecall(
       concept,
       itemsCovered,
-      existingUnderstanding
+      existingUnderstanding,
+      weakTopics,
+      strugglingItems
     );
   }
 
@@ -259,14 +267,18 @@ export class AIService {
     userAnswer: string,
     concept: Concept,
     itemsCovered: string[],
-    existingUnderstanding: string
+    existingUnderstanding: string,
+    weakTopics?: Array<{ topic: string; comprehension: number }>,
+    strugglingItems?: Array<{ item: string; averageComprehension: number }>
   ): Promise<string> {
     return this.evaluationService.evaluateHighLevelAnswer(
       question,
       userAnswer,
       concept,
       itemsCovered,
-      existingUnderstanding
+      existingUnderstanding,
+      weakTopics,
+      strugglingItems
     );
   }
 

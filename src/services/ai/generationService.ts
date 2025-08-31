@@ -2,16 +2,16 @@ import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { Concept, Course } from "../../types/course.js";
 import {
+  conceptAwareHighLevelPrompts,
   conceptLearningPrompts,
   connectionPrompts,
   connectionQuestionPrompts,
   elaborationPrompts,
-  highLevelEvaluationPrompts,
   highLevelPrompts,
 } from "./prompts/index.js";
 
 export class GenerationService {
-  private model = openai("gpt-5-mini");
+  private model = openai("gpt-4.1-mini");
 
   async generateHighLevelQuestion(
     course: Course,
@@ -98,7 +98,10 @@ Then generate a focused question or teaching point that explores a specific aspe
         previousQuestions,
         existingUnderstanding
       ),
-      prompt: connectionPrompts.generationPrompt(connections, previousQuestions),
+      prompt: connectionPrompts.generationPrompt(
+        connections,
+        previousQuestions
+      ),
     });
 
     return text;
@@ -108,12 +111,19 @@ Then generate a focused question or teaching point that explores a specific aspe
   async generateElaborationQuestion(
     item: string,
     fields: string[],
-    concept: Concept
+    concept: Concept,
+    userAnswer?: string,
+    evaluation?: string
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
       system: elaborationPrompts.generationSystem(item, concept.name),
-      prompt: elaborationPrompts.generationPrompt(item, fields),
+      prompt: elaborationPrompts.generationPrompt(
+        item,
+        fields,
+        userAnswer,
+        evaluation
+      ),
     });
 
     return text;
@@ -145,18 +155,46 @@ Then generate a focused question or teaching point that explores a specific aspe
   async generateHighLevelRecall(
     concept: Concept,
     itemsCovered: string[],
-    existingUnderstanding: string
+    existingUnderstanding: string,
+    weakTopics?: Array<{ topic: string; comprehension: number }>,
+    strugglingItems?: Array<{ item: string; averageComprehension: number }>
   ): Promise<string> {
+    // Use concept-aware prompts when we have performance data
+    if (weakTopics && strugglingItems) {
+      const { text } = await generateText({
+        model: this.model,
+        system: conceptAwareHighLevelPrompts.generationSystem(
+          concept.name,
+          existingUnderstanding,
+          weakTopics,
+          strugglingItems
+        ),
+        prompt: conceptAwareHighLevelPrompts.generationPrompt(
+          concept,
+          itemsCovered,
+          existingUnderstanding,
+          weakTopics,
+          strugglingItems
+        ),
+      });
+      return text;
+    }
+
+    // Fallback to basic high-level prompts (shouldn't happen in practice)
     const { text } = await generateText({
       model: this.model,
-      system: highLevelEvaluationPrompts.generationSystem(
+      system: conceptAwareHighLevelPrompts.generationSystem(
         concept.name,
-        existingUnderstanding
+        existingUnderstanding,
+        [],
+        []
       ),
-      prompt: highLevelEvaluationPrompts.generationPrompt(
+      prompt: conceptAwareHighLevelPrompts.generationPrompt(
         concept,
         itemsCovered,
-        existingUnderstanding
+        existingUnderstanding,
+        [],
+        []
       ),
     });
 

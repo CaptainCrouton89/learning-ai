@@ -41,14 +41,18 @@ export class MemorizationPhase {
     );
 
     const scheduleQueue: FlashcardSchedule[] = [];
-    
+
     for (const item of concept.memorize.items) {
-      const existingSchedule = this.courseManager.getItemScheduling(session, concept.name, item);
-      
+      const existingSchedule = this.courseManager.getItemScheduling(
+        session,
+        concept.name,
+        item
+      );
+
       if (existingSchedule && existingSchedule.successCount >= 2) {
         continue;
       }
-      
+
       scheduleQueue.push({
         item,
         easeFactor: existingSchedule?.easeFactor || this.INITIAL_EASE,
@@ -68,7 +72,11 @@ export class MemorizationPhase {
     }
 
     while (scheduleQueue.length > 0) {
-      const nextCard = this.selectNextCard(scheduleQueue, session, concept.name);
+      const nextCard = this.selectNextCard(
+        scheduleQueue,
+        session,
+        concept.name
+      );
       if (!nextCard) break;
 
       const evaluation = await this.askFlashcardQuestion(
@@ -79,7 +87,10 @@ export class MemorizationPhase {
         scheduleQueue
       );
 
-      const currentPosition = this.courseManager.incrementGlobalPosition(session, concept.name);
+      const currentPosition = this.courseManager.incrementGlobalPosition(
+        session,
+        concept.name
+      );
 
       const specialQuestionType = await this.determineSpecialQuestion(
         evaluation.comprehension,
@@ -95,7 +106,7 @@ export class MemorizationPhase {
           concept,
           course,
           session,
-          evaluation.comprehension
+          evaluation
         );
       }
 
@@ -124,7 +135,10 @@ export class MemorizationPhase {
     const activeCards = queue.filter((card) => card.successCount < 2);
     if (activeCards.length === 0) return null;
 
-    const currentPosition = this.courseManager.getGlobalPosition(session, conceptName);
+    const currentPosition = this.courseManager.getGlobalPosition(
+      session,
+      conceptName
+    );
     const overdueCards = activeCards.filter(
       (card) => card.duePosition <= currentPosition
     );
@@ -170,7 +184,7 @@ export class MemorizationPhase {
     course: Course,
     session: LearningSession,
     scheduleQueue: FlashcardSchedule[]
-  ): Promise<{ comprehension: number; response: string }> {
+  ): Promise<{ comprehension: number; response: string; userAnswer: string }> {
     const { item } = schedule;
     const fields = concept.memorize.fields;
 
@@ -225,7 +239,10 @@ export class MemorizationPhase {
       session.existingUnderstanding
     );
 
-    const currentGlobalPosition = this.courseManager.getGlobalPosition(session, concept.name);
+    const currentGlobalPosition = this.courseManager.getGlobalPosition(
+      session,
+      concept.name
+    );
     const newEase = this.updateEaseFactor(
       evaluation.comprehension,
       schedule.easeFactor
@@ -281,9 +298,9 @@ export class MemorizationPhase {
     }
 
     await this.courseManager.updateItemProgress(
-      session, 
-      concept.name, 
-      item, 
+      session,
+      concept.name,
+      item,
       {
         question: `Describe fields for ${item}: ${fields.join(", ")}`,
         userAnswer: answer,
@@ -293,7 +310,7 @@ export class MemorizationPhase {
         easeFactor: schedule.easeFactor,
         interval: schedule.interval,
         nextDuePosition: schedule.duePosition,
-        successCount: schedule.successCount
+        successCount: schedule.successCount,
       }
     );
 
@@ -301,7 +318,7 @@ export class MemorizationPhase {
       this.itemsCovered.push(item);
     }
 
-    return evaluation;
+    return { ...evaluation, userAnswer: answer };
   }
 
   private async determineSpecialQuestion(
@@ -335,7 +352,11 @@ export class MemorizationPhase {
     concept: Concept,
     course: Course,
     session: LearningSession,
-    lastComprehension: number
+    lastEvaluation: {
+      comprehension: number;
+      response: string;
+      userAnswer: string;
+    }
   ): Promise<void> {
     let question: string;
     let questionData: any = { type, timestamp: new Date() };
@@ -345,7 +366,9 @@ export class MemorizationPhase {
       question = await this.ai.generateElaborationQuestion(
         currentItem,
         concept.memorize.fields,
-        concept
+        concept,
+        lastEvaluation.userAnswer,
+        lastEvaluation.response
       );
       questionData.targetItem = currentItem;
     } else if (type === "connection") {
@@ -369,11 +392,34 @@ export class MemorizationPhase {
       questionData.connectedItem = currentItem;
     } else {
       console.log(chalk.magenta("\n💭 Let's see the bigger picture...\n"));
+
+      // Gather weak topics from concept learning phase
+      const topicComprehension = this.courseManager.getAllTopicsComprehension(
+        session,
+        concept.name,
+        concept["high-level"]
+      );
+      const weakTopics = Array.from(topicComprehension.entries())
+        .filter(([_, comprehension]) => comprehension < 5)
+        .map(([topic, comprehension]) => ({ topic, comprehension }))
+        .sort((a, b) => a.comprehension - b.comprehension);
+
+      // Gather struggling flashcard items
+      const strugglingItems = this.courseManager.getStrugglingItems(
+        session,
+        concept.name
+      );
+
       question = await this.ai.generateHighLevelRecall(
         concept,
         this.itemsCovered,
-        session.existingUnderstanding
+        session.existingUnderstanding,
+        weakTopics,
+        strugglingItems
       );
+
+      questionData.weakTopics = weakTopics;
+      questionData.strugglingItems = strugglingItems.map((i) => i.item);
     }
 
     console.log(chalk.bold(question + "\n"));
@@ -407,12 +453,30 @@ export class MemorizationPhase {
         concept
       );
     } else {
+      // Get weak topics for evaluation context
+      const topicComprehension = this.courseManager.getAllTopicsComprehension(
+        session,
+        concept.name,
+        concept["high-level"]
+      );
+      const weakTopics = Array.from(topicComprehension.entries())
+        .filter(([_, comprehension]) => comprehension < 5)
+        .map(([topic, comprehension]) => ({ topic, comprehension }))
+        .sort((a, b) => a.comprehension - b.comprehension);
+
+      const strugglingItems = this.courseManager.getStrugglingItems(
+        session,
+        concept.name
+      );
+
       feedback = await this.ai.evaluateHighLevelAnswer(
         question,
         answer,
         concept,
         this.itemsCovered,
-        session.existingUnderstanding
+        session.existingUnderstanding,
+        weakTopics,
+        strugglingItems
       );
     }
 

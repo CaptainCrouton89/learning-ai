@@ -7,5 +7,5 @@ export * from "./learningGoalSuggestion.js";
 export * from "./memorization/connectionQuestion.js";
 export * from "./memorization/elaboration.js";
 export * from "./memorization/flashcard.js";
-export * from "./memorization/highLevelEvaluation.js";
+export * from "./memorization/conceptAwareHighLevel.js";
 export * from "./topicRefinement.js";

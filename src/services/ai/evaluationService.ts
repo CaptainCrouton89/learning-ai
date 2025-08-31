@@ -3,12 +3,12 @@ import { generateObject, generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 import { Concept, Course } from "../../types/course.js";
 import {
+  conceptAwareHighLevelPrompts,
   conceptLearningPrompts,
   connectionPrompts,
   connectionQuestionPrompts,
   elaborationPrompts,
   flashcardPrompts,
-  highLevelEvaluationPrompts,
   highLevelPrompts,
 } from "./prompts/index.js";
 import {
@@ -17,7 +17,7 @@ import {
 } from "./schemas.js";
 
 export class EvaluationService {
-  private model = openai("gpt-5-mini");
+  private model = openai("gpt-4.1-mini");
 
   async generateHighLevelResponse(
     userAnswer: string,
@@ -306,19 +306,46 @@ Provide substantive feedback that advances their understanding, then ask a speci
     userAnswer: string,
     concept: Concept,
     itemsCovered: string[],
-    existingUnderstanding: string = "Some - I know the basics"
+    existingUnderstanding: string = "Some - I know the basics",
+    weakTopics?: Array<{ topic: string; comprehension: number }>,
+    strugglingItems?: Array<{ item: string; averageComprehension: number }>
   ): Promise<string> {
+    // Use concept-aware prompts when we have performance data
+    if (weakTopics && strugglingItems) {
+      const { text } = await generateText({
+        model: this.model,
+        system: conceptAwareHighLevelPrompts.evaluationSystem(
+          concept.name,
+          existingUnderstanding,
+          weakTopics
+        ),
+        prompt: conceptAwareHighLevelPrompts.userPrompt(
+          question,
+          itemsCovered,
+          concept["high-level"],
+          userAnswer,
+          weakTopics,
+          strugglingItems
+        ),
+      });
+      return text;
+    }
+
+    // Fallback (shouldn't happen in practice)
     const { text } = await generateText({
       model: this.model,
-      system: highLevelEvaluationPrompts.evaluationSystem(
+      system: conceptAwareHighLevelPrompts.evaluationSystem(
         concept.name,
-        existingUnderstanding
+        existingUnderstanding,
+        []
       ),
-      prompt: highLevelEvaluationPrompts.userPrompt(
+      prompt: conceptAwareHighLevelPrompts.userPrompt(
         question,
         itemsCovered,
         concept["high-level"],
-        userAnswer
+        userAnswer,
+        [],
+        []
       ),
     });
 

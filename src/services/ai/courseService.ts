@@ -10,8 +10,8 @@ import {
 import { ConceptDetailSchema, CourseGenerationSchema } from "./schemas.js";
 
 export class CourseService {
-  private smartModel = openai("gpt-4.1");
-  private fastModel = openai("gpt-5-mini");
+  private smartModel = openai("gpt-5");
+  private fastModel = openai("gpt-4.1-mini");
 
   async analyzeTopic(
     topic: string,
