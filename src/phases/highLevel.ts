@@ -1,13 +1,12 @@
 import chalk from "chalk";
 import inquirer from "inquirer";
 import { AIService } from "../services/ai/index.js";
-import { CourseManager } from "../services/courseManager.js";
+import { getCourseManager } from "../config/storage.js";
 import { ConceptAttempt, Course, LearningSession } from "../types/course.js";
 import { createProgressBar, displayProgressSection } from "../utils/progressBar.js";
 
 export class HighLevelPhase {
   private ai = new AIService();
-  private courseManager = new CourseManager();
 
   async start(course: Course, session: LearningSession): Promise<void> {
     console.log(chalk.blue("\n📖 Let's start with a high-level overview\n"));
@@ -20,21 +19,22 @@ export class HighLevelPhase {
       chalk.gray("Type /skip at any time if you're already familiar with a topic.\n")
     );
 
-    await this.courseManager.updateSessionPhase(session, "high-level");
+    const courseManager = await getCourseManager();
+    await courseManager.updateSessionPhase(session, "high-level");
 
     // Use backgroundKnowledge if available, otherwise use concept names as fallback
     const highLevelTopics = course.backgroundKnowledge && course.backgroundKnowledge.length > 0
       ? course.backgroundKnowledge
       : course.concepts.map((c) => c.name);
     
-    let unmasteredTopics = this.courseManager.getUnmasteredTopics(
+    let unmasteredTopics = courseManager.getUnmasteredTopics(
       session,
       "high-level",
       highLevelTopics
     );
 
     // Show initial progress
-    this.displayHighLevelProgress(session, highLevelTopics);
+    await this.displayHighLevelProgress(session, highLevelTopics);
 
     // Generate the first question to start the conversation (with introduction)
     const firstQuestion = await this.ai.generateHighLevelQuestion(
@@ -44,7 +44,7 @@ export class HighLevelPhase {
       true // isFirstQuestion flag for introduction
     );
     console.log(chalk.cyan(`\n${firstQuestion}\n`));
-    await this.courseManager.addConversationEntry(
+    await courseManager.addConversationEntry(
       session,
       "assistant",
       firstQuestion
@@ -82,20 +82,20 @@ export class HighLevelPhase {
           timestamp: new Date(),
         };
 
-        await this.courseManager.updateConceptTopicProgress(
+        await courseManager.updateConceptTopicProgress(
           session,
           "high-level",
           skipAttempt
         );
-        await this.courseManager.addConversationEntry(session, "user", "/skip");
-        await this.courseManager.addConversationEntry(
+        await courseManager.addConversationEntry(session, "user", "/skip");
+        await courseManager.addConversationEntry(
           session,
           "assistant",
           "Topic marked as understood (skipped)."
         );
 
         // Update unmastered topics list
-        unmasteredTopics = this.courseManager.getUnmasteredTopics(
+        unmasteredTopics = courseManager.getUnmasteredTopics(
           session,
           "high-level",
           highLevelTopics
@@ -109,7 +109,7 @@ export class HighLevelPhase {
             session.existingUnderstanding
           );
           console.log(chalk.cyan(`\n${nextQuestion}\n`));
-          await this.courseManager.addConversationEntry(
+          await courseManager.addConversationEntry(
             session,
             "assistant",
             nextQuestion
@@ -119,11 +119,11 @@ export class HighLevelPhase {
         continue;
       }
 
-      await this.courseManager.addConversationEntry(session, "user", answer);
+      await courseManager.addConversationEntry(session, "user", answer);
 
       // Get current comprehension progress for all topics
       const comprehensionProgress =
-        this.courseManager.getAllTopicsComprehension(
+        courseManager.getAllTopicsComprehension(
           session,
           "high-level",
           highLevelTopics
@@ -141,7 +141,7 @@ export class HighLevelPhase {
 
       // Display feedback first
       console.log(chalk.green(`\n${response}\n`));
-      await this.courseManager.addConversationEntry(
+      await courseManager.addConversationEntry(
         session,
         "assistant",
         response
@@ -182,7 +182,7 @@ export class HighLevelPhase {
         };
 
         // Update topic progress
-        await this.courseManager.updateConceptTopicProgress(
+        await courseManager.updateConceptTopicProgress(
           session,
           "high-level",
           attempt
@@ -213,7 +213,7 @@ export class HighLevelPhase {
       }
 
       // Update unmastered topics list
-      unmasteredTopics = this.courseManager.getUnmasteredTopics(
+      unmasteredTopics = courseManager.getUnmasteredTopics(
         session,
         "high-level",
         highLevelTopics
@@ -225,7 +225,7 @@ export class HighLevelPhase {
 
       // Show progress every 3 questions
       if (questionCount % 3 === 0) {
-        this.displayHighLevelProgress(session, highLevelTopics);
+        await this.displayHighLevelProgress(session, highLevelTopics);
 
         if (unmasteredTopics.length > 0 && questionCount < maxQuestions - 3) {
           const { continuePhase } = await inquirer.prompt([
@@ -256,7 +256,7 @@ export class HighLevelPhase {
           "\n🎯 Great! You have a solid foundation for the course!\n"
         )
       );
-      this.displayHighLevelProgress(session, highLevelTopics);
+      await this.displayHighLevelProgress(session, highLevelTopics);
     } else {
       console.log(chalk.yellow("\n📝 Good progress with the overview!\n"));
       if (questionCount >= maxQuestions) {
@@ -317,14 +317,15 @@ export class HighLevelPhase {
         },
       ]);
 
-      await this.courseManager.addConversationEntry(session, "user", question);
+      const courseManager = await getCourseManager();
+      await courseManager.addConversationEntry(session, "user", question);
 
       console.log(chalk.gray("\nLet me explain...\n"));
 
       // Get current comprehension progress for context
       const highLevelTopics = course.concepts.map((c) => c.name);
       const comprehensionProgress =
-        this.courseManager.getAllTopicsComprehension(
+        courseManager.getAllTopicsComprehension(
           session,
           "high-level",
           highLevelTopics
@@ -339,7 +340,7 @@ export class HighLevelPhase {
       );
 
       console.log(chalk.green(response));
-      await this.courseManager.addConversationEntry(
+      await courseManager.addConversationEntry(
         session,
         "assistant",
         response
@@ -358,12 +359,13 @@ export class HighLevelPhase {
     }
   }
 
-  private displayHighLevelProgress(
+  private async displayHighLevelProgress(
     session: LearningSession,
     topics: string[]
-  ): void {
+  ): Promise<void> {
     console.log(chalk.blue("\n📊 Overview Progress:"));
-    const comprehensionMap = this.courseManager.getAllTopicsComprehension(
+    const courseManager = await getCourseManager();
+    const comprehensionMap = courseManager.getAllTopicsComprehension(
       session,
       "high-level",
       topics

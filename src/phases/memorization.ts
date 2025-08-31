@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import inquirer from "inquirer";
 import { AIService } from "../services/ai/index.js";
-import { CourseManager } from "../services/courseManager.js";
+import { getCourseManager } from "../config/storage.js";
 import {
   Concept,
   Course,
@@ -11,7 +11,6 @@ import {
 
 export class MemorizationPhase {
   private ai = new AIService();
-  private courseManager = new CourseManager();
   private readonly MIN_EASE = 1.3;
   private readonly MAX_EASE = 4.0;
   private readonly INITIAL_EASE = 2.5;
@@ -34,7 +33,8 @@ export class MemorizationPhase {
       )
     );
 
-    await this.courseManager.updateSessionPhase(
+    const courseManager = await getCourseManager();
+    await courseManager.updateSessionPhase(
       session,
       "memorization",
       concept.name
@@ -43,7 +43,7 @@ export class MemorizationPhase {
     const scheduleQueue: FlashcardSchedule[] = [];
 
     for (const item of concept.memorize.items) {
-      const existingSchedule = this.courseManager.getItemScheduling(
+      const existingSchedule = courseManager.getItemScheduling(
         session,
         concept.name,
         item
@@ -72,7 +72,7 @@ export class MemorizationPhase {
     }
 
     while (scheduleQueue.length > 0) {
-      const nextCard = this.selectNextCard(
+      const nextCard = await this.selectNextCard(
         scheduleQueue,
         session,
         concept.name
@@ -87,7 +87,7 @@ export class MemorizationPhase {
         scheduleQueue
       );
 
-      const currentPosition = this.courseManager.incrementGlobalPosition(
+      const currentPosition = courseManager.incrementGlobalPosition(
         session,
         concept.name
       );
@@ -127,15 +127,16 @@ export class MemorizationPhase {
     );
   }
 
-  private selectNextCard(
+  private async selectNextCard(
     queue: FlashcardSchedule[],
     session: LearningSession,
     conceptName: string
-  ): FlashcardSchedule | null {
+  ): Promise<FlashcardSchedule | null> {
     const activeCards = queue.filter((card) => card.successCount < 2);
     if (activeCards.length === 0) return null;
 
-    const currentPosition = this.courseManager.getGlobalPosition(
+    const courseManager = await getCourseManager();
+    const currentPosition = courseManager.getGlobalPosition(
       session,
       conceptName
     );
@@ -239,7 +240,8 @@ export class MemorizationPhase {
       session.existingUnderstanding
     );
 
-    const currentGlobalPosition = this.courseManager.getGlobalPosition(
+    const courseManager = await getCourseManager();
+    const currentGlobalPosition = courseManager.getGlobalPosition(
       session,
       concept.name
     );
@@ -297,7 +299,7 @@ export class MemorizationPhase {
       schedule.successCount = 0;
     }
 
-    await this.courseManager.updateItemProgress(
+    await courseManager.updateItemProgress(
       session,
       concept.name,
       item,
@@ -333,7 +335,8 @@ export class MemorizationPhase {
       if (random < 0.4) return "elaboration";
       if (random < 0.6) return "high-level";
     } else if (comprehension === 5) {
-      const strugglingItems = this.courseManager.getStrugglingItems(
+      const courseManager = await getCourseManager();
+      const strugglingItems = courseManager.getStrugglingItems(
         session,
         concept.name
       );
@@ -373,7 +376,8 @@ export class MemorizationPhase {
       questionData.targetItem = currentItem;
     } else if (type === "connection") {
       console.log(chalk.cyan("\n🔗 Let's make connections...\n"));
-      const strugglingItems = this.courseManager.getStrugglingItems(
+      const courseManager = await getCourseManager();
+      const strugglingItems = courseManager.getStrugglingItems(
         session,
         concept.name
       );
@@ -394,7 +398,8 @@ export class MemorizationPhase {
       console.log(chalk.magenta("\n💭 Let's see the bigger picture...\n"));
 
       // Gather weak topics from concept learning phase
-      const topicComprehension = this.courseManager.getAllTopicsComprehension(
+      const courseManager = await getCourseManager();
+      const topicComprehension = courseManager.getAllTopicsComprehension(
         session,
         concept.name,
         concept["high-level"]
@@ -405,7 +410,7 @@ export class MemorizationPhase {
         .sort((a, b) => a.comprehension - b.comprehension);
 
       // Gather struggling flashcard items
-      const strugglingItems = this.courseManager.getStrugglingItems(
+      const strugglingItems = courseManager.getStrugglingItems(
         session,
         concept.name
       );
@@ -454,7 +459,8 @@ export class MemorizationPhase {
       );
     } else {
       // Get weak topics for evaluation context
-      const topicComprehension = this.courseManager.getAllTopicsComprehension(
+      const courseManager = await getCourseManager();
+      const topicComprehension = courseManager.getAllTopicsComprehension(
         session,
         concept.name,
         concept["high-level"]
@@ -464,7 +470,7 @@ export class MemorizationPhase {
         .map(([topic, comprehension]) => ({ topic, comprehension }))
         .sort((a, b) => a.comprehension - b.comprehension);
 
-      const strugglingItems = this.courseManager.getStrugglingItems(
+      const strugglingItems = courseManager.getStrugglingItems(
         session,
         concept.name
       );
@@ -482,7 +488,8 @@ export class MemorizationPhase {
 
     console.log(chalk.blue(`\n${feedback}\n`));
 
-    await this.courseManager.addSpecialQuestion(
+    const courseManager = await getCourseManager();
+    await courseManager.addSpecialQuestion(
       session,
       concept.name,
       questionData

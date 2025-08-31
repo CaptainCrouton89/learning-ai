@@ -1,9 +1,9 @@
 import chalk from 'chalk';
-import { CourseManager } from '../services/courseManager.js';
+import { getCourseManager } from '../config/storage.js';
 
 export async function listCourses(): Promise<void> {
   try {
-    const courseManager = new CourseManager();
+    const courseManager = await getCourseManager();
     const courses = await courseManager.listCourses();
 
     if (courses.length === 0) {

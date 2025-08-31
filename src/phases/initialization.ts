@@ -3,12 +3,11 @@ import { promises as fs } from "fs";
 import inquirer from "inquirer";
 import ora from "ora";
 import { AIService } from "../services/ai/index.js";
-import { CourseManager } from "../services/courseManager.js";
+import { getCourseManager } from "../config/storage.js";
 import { Course } from "../types/course.js";
 
 export class InitializationPhase {
   private ai = new AIService();
-  private courseManager = new CourseManager();
 
   async start(options: { file?: string; topic?: string }): Promise<{ course: Course; existingUnderstanding: string; timeAvailable: string }> {
     console.log(chalk.blue("\n📚 Welcome to AI Learning Tool!\n"));
@@ -226,7 +225,8 @@ export class InitializationPhase {
         focusDescription
       );
 
-      await this.courseManager.saveCourse(course);
+      const courseManager = await getCourseManager();
+      await courseManager.saveCourse(course);
       spinner.succeed("Course created successfully!");
 
       console.log(

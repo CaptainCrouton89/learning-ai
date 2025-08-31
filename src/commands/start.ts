@@ -3,7 +3,7 @@ import { InitializationPhase } from '../phases/initialization.js';
 import { HighLevelPhase } from '../phases/highLevel.js';
 import { ConceptLearningPhase } from '../phases/conceptLearning.js';
 import { DrawingConnectionsPhase } from '../phases/drawingConnections.js';
-import { CourseManager } from '../services/courseManager.js';
+import { getCourseManager } from '../config/storage.js';
 
 export async function startLearningSession(options: { file?: string; topic?: string }): Promise<void> {
   try {
@@ -12,7 +12,7 @@ export async function startLearningSession(options: { file?: string; topic?: str
     const initPhase = new InitializationPhase();
     const { course, existingUnderstanding, timeAvailable } = await initPhase.start(options);
 
-    const courseManager = new CourseManager();
+    const courseManager = await getCourseManager();
     const session = await courseManager.createSession(course.name);
     session.existingUnderstanding = existingUnderstanding;
     session.timeAvailable = timeAvailable;

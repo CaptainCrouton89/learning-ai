@@ -1,13 +1,13 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import { CourseManager } from '../services/courseManager.js';
+import { getCourseManager } from '../config/storage.js';
 import { HighLevelPhase } from '../phases/highLevel.js';
 import { ConceptLearningPhase } from '../phases/conceptLearning.js';
 import { DrawingConnectionsPhase } from '../phases/drawingConnections.js';
 
 export async function resumeLearningSession(options: { course?: string }): Promise<void> {
   try {
-    const courseManager = new CourseManager();
+    const courseManager = await getCourseManager();
     
     let courseName: string;
     

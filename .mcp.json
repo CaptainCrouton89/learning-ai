@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "static-analysis": {
+      "command": "npx",
+      "args": ["-y", "@r-mcp/static-analysis@latest"]
+    }
+  }
+}

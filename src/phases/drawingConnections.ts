@@ -1,12 +1,11 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { AIService } from '../services/ai/index.js';
-import { CourseManager } from '../services/courseManager.js';
+import { getCourseManager } from '../config/storage.js';
 import { Course, LearningSession } from '../types/course.js';
 
 export class DrawingConnectionsPhase {
   private ai = new AIService();
-  private courseManager = new CourseManager();
   private questionsAsked: Array<{ question: string; answer: string }> = [];
   private maxQuestions = 10;
 
@@ -14,7 +13,8 @@ export class DrawingConnectionsPhase {
     console.log(chalk.blue('\n🔗 Final Phase: Drawing Connections\n'));
     console.log(chalk.gray('Now let\'s tie everything together with scenario-based questions.\n'));
 
-    await this.courseManager.updateSessionPhase(session, 'drawing-connections');
+    const courseManager = await getCourseManager();
+    await courseManager.updateSessionPhase(session, 'drawing-connections');
 
     const connections = course['drawing-connections'];
     let questionCount = 0;
@@ -36,7 +36,7 @@ export class DrawingConnectionsPhase {
         validate: (input) => input.trim().length > 0 || 'Please provide a response'
       }]);
 
-      await this.courseManager.addConversationEntry(session, 'user', answer);
+      await courseManager.addConversationEntry(session, 'user', answer);
 
       const evaluation = await this.ai.evaluateConnectionAnswer(
         question,
@@ -46,7 +46,7 @@ export class DrawingConnectionsPhase {
       );
 
       console.log(chalk.green(`\n${evaluation.response}\n`));
-      await this.courseManager.addConversationEntry(session, 'assistant', evaluation.response);
+      await courseManager.addConversationEntry(session, 'assistant', evaluation.response);
 
       this.questionsAsked.push({ question, answer });
 
@@ -61,7 +61,7 @@ export class DrawingConnectionsPhase {
           validate: (input) => input.length > 0 || 'Please provide a response'
         }]);
 
-        await this.courseManager.addConversationEntry(session, 'user', followUpAnswer);
+        await courseManager.addConversationEntry(session, 'user', followUpAnswer);
 
         const followUpFeedback = await this.ai.evaluateConnectionAnswer(
           evaluation.followUp,
@@ -71,7 +71,7 @@ export class DrawingConnectionsPhase {
         );
 
         console.log(chalk.green(`\n${followUpFeedback.response}\n`));
-        await this.courseManager.addConversationEntry(session, 'assistant', followUpFeedback.response);
+        await courseManager.addConversationEntry(session, 'assistant', followUpFeedback.response);
 
         this.questionsAsked.push({ 
           question: evaluation.followUp, 
