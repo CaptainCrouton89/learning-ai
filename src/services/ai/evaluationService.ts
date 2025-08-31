@@ -4,13 +4,13 @@ import { z } from "zod";
 import { Concept, Course } from "../../types/course.js";
 import {
   conceptLearningPrompts,
-  highLevelPrompts,
-  flashcardPrompts,
   connectionPrompts,
-  elaborationPrompts,
   connectionQuestionPrompts,
+  elaborationPrompts,
+  flashcardPrompts,
   highLevelEvaluationPrompts,
-} from "./prompts.js";
+  highLevelPrompts,
+} from "./prompts/index.js";
 import {
   ConceptAnswerEvaluationSchema,
   FlashcardResponseSchema,
@@ -30,10 +30,11 @@ export class EvaluationService {
     comprehensionUpdates: Array<{ topic: string; comprehension: number }>;
   }> {
     // Use backgroundKnowledge if available, otherwise fall back to concept names
-    const topicsToTeach = course.backgroundKnowledge && course.backgroundKnowledge.length > 0
-      ? course.backgroundKnowledge
-      : course.concepts.map((c) => c.name);
-    
+    const topicsToTeach =
+      course.backgroundKnowledge && course.backgroundKnowledge.length > 0
+        ? course.backgroundKnowledge
+        : course.concepts.map((c) => c.name);
+
     const comprehensionUpdates: Array<{
       topic: string;
       comprehension: number;
@@ -212,14 +213,13 @@ Provide substantive feedback that advances their understanding, then ask a speci
     const { object } = await generateObject({
       model: this.model,
       schema: FlashcardResponseSchema,
-      system: flashcardPrompts.evaluationSystem(
-        concept.name,
-        fields,
-        existingUnderstanding
-      ).replace("{item}", item).replace(
-        otherConcepts[0] || "another concept",
-        otherConcepts[0] || "another concept"
-      ),
+      system: flashcardPrompts
+        .evaluationSystem(concept.name, fields, existingUnderstanding)
+        .replace("{item}", item)
+        .replace(
+          otherConcepts[0] || "another concept",
+          otherConcepts[0] || "another concept"
+        ),
       prompt: flashcardPrompts.userPrompt(
         item,
         fields,
@@ -230,7 +230,6 @@ Provide substantive feedback that advances their understanding, then ask a speci
 
     return object;
   }
-
 
   async evaluateConnectionAnswer(
     question: string,

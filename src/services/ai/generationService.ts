@@ -1,7 +1,14 @@
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { Concept, Course } from "../../types/course.js";
-import { conceptLearningPrompts, highLevelPrompts } from "./prompts.js";
+import {
+  conceptLearningPrompts,
+  connectionPrompts,
+  connectionQuestionPrompts,
+  elaborationPrompts,
+  highLevelEvaluationPrompts,
+  highLevelPrompts,
+} from "./prompts/index.js";
 
 export class GenerationService {
   private model = openai("gpt-5-mini");
@@ -77,7 +84,6 @@ Then generate a focused question or teaching point that explores a specific aspe
     return text;
   }
 
-
   async generateConnectionQuestion(
     connections: string[],
     course: Course,
@@ -86,75 +92,13 @@ Then generate a focused question or teaching point that explores a specific aspe
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `<role>
-You are an expert educator creating scenario-based synthesis questions for ${
-        course.name
-      }.
-</role>
-
-<user-level>
-Existing Understanding: ${existingUnderstanding}
-</user-level>
-
-<objective>
-Create ${
-        existingUnderstanding === "None - Complete beginner"
-          ? "approachable scenarios that help beginners see connections"
-          : existingUnderstanding === "Some - I know the basics"
-          ? "challenging scenarios that require integrating knowledge"
-          : "complex, nuanced scenarios with multiple trade-offs"
-      } between concepts to solve real problems.
-</objective>
-
-<scenario-design-principles>
-${
-  existingUnderstanding === "None - Complete beginner"
-    ? `1. **Start with Relatable Situations**: "Imagine you need to..." or "A friend asks you..."
-2. **Provide Clear Context**: Explain any technical terms in the scenario
-3. **Focus on Fundamental Trade-offs**: "Would you choose X or Y and why?"
-4. **Guide Thinking Process**: "Consider how [concept A] affects [concept B]"`
-    : existingUnderstanding === "Some - I know the basics"
-    ? `1. **Present Realistic Problems**: "Your team encounters..." or "A project requires..."
-2. **Include Multiple Constraints**: Time, budget, technical limitations
-3. **Require Prioritization**: "Given these constraints, what's most important?"
-4. **Test Applied Knowledge**: "How would you implement X while considering Y?"`
-    : `1. **Complex Professional Scenarios**: "As the lead architect..." or "The CEO asks you..."
-2. **Multiple Competing Factors**: Political, technical, financial, strategic
-3. **Demand Strategic Thinking**: "What's your 3-phase approach?"
-4. **Test Edge Cases**: "What if the usual approach fails?"
-5. **Require Innovation**: "How would you solve this unprecedented challenge?"`
-}
-</scenario-design-principles>
-
-<avoid>
-- Generic "explain how X relates to Y" questions
-- Scenarios with obvious solutions
-- Questions that can be answered by listing facts
-- Hypotheticals without specific constraints
-</avoid>`,
-      prompt: `<context>
-Key topics to connect: ${connections.join(", ")}
-Previous scenarios covered: ${previousQuestions
-        .map((q) => q.question)
-        .slice(0, 3)
-        .join("; ")}
-</context>
-
-<task>
-Create a SPECIFIC scenario that:
-1. Presents a realistic problem or decision point
-2. Requires synthesizing at least 2-3 of the connection topics
-3. Has multiple valid approaches with different trade-offs
-4. Cannot be solved with textbook knowledge alone
-
-Structure:
-1. Set up a concrete scenario (2-3 sentences)
-2. Present a specific challenge or decision
-3. Ask for analysis with constraints (e.g., "Given limited time, which TWO factors would you prioritize?")
-
-Example format:
-"You're evaluating two wines for a restaurant's house selection. Wine A has high acidity and moderate tannins, while Wine B has low acidity but bold tannins. Your menu is seafood-focused but you need versatility. Which wine would you choose and why? Consider food pairing principles, customer preferences, and aging potential in your analysis."
-</task>`,
+      system: connectionPrompts.generationSystem(
+        course.name,
+        connections,
+        previousQuestions,
+        existingUnderstanding
+      ),
+      prompt: connectionPrompts.generationPrompt(connections, previousQuestions),
     });
 
     return text;
@@ -168,14 +112,8 @@ Example format:
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `Generate an elaboration question about ${item} from ${concept.name}.
-      The user struggled with this item. Ask "why" or "what causes" questions to deepen understanding.
-      Focus on the underlying reasons, mechanisms, or causes.
-      Keep the question concise and focused.`,
-      prompt: `Item: ${item}
-      Fields: ${fields.join(", ")}
-      Generate a question like "Why is X true?" or "What causes Y?" or "How does X lead to Y?"
-      Make it specific to this item and help the user understand the deeper reasoning.`,
+      system: elaborationPrompts.generationSystem(item, concept.name),
+      prompt: elaborationPrompts.generationPrompt(item, fields),
     });
 
     return text;
@@ -189,18 +127,15 @@ Example format:
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `Generate a connection question linking two items from ${concept.name}.
-      The user knows ${performingItem} well but struggles with ${strugglingItem}.
-      Create a question that helps them understand ${strugglingItem} by comparing or relating it to ${performingItem}.`,
-      prompt: `Well-known item: ${performingItem}
-      Struggling item: ${strugglingItem}
-      
-      Generate a question like:
-      - "How does ${performingItem} compare to ${strugglingItem}?"
-      - "What similarities/differences exist between these two?"
-      - "How does understanding ${performingItem} help you understand ${strugglingItem}?"
-      
-      Be specific and help build connections between what they know and what they're learning.`,
+      system: connectionQuestionPrompts.generationSystem(
+        performingItem,
+        strugglingItem,
+        concept.name
+      ),
+      prompt: connectionQuestionPrompts.generationPrompt(
+        performingItem,
+        strugglingItem
+      ),
     });
 
     return text;
@@ -214,148 +149,15 @@ Example format:
   ): Promise<string> {
     const { text } = await generateText({
       model: this.model,
-      system: `<role>
-You are an expert educator testing synthesis and critical thinking about ${
-        concept.name
-      }.
-</role>
-
-<user-level>
-Existing Understanding: ${existingUnderstanding}
-</user-level>
-
-<objective>
-Create questions that test understanding through analysis, scaled to the learner's level.
-</objective>
-
-<difficulty-scaled-frameworks>
-${
-  existingUnderstanding === "None - Complete beginner"
-    ? `**BEGINNER-LEVEL SYNTHESIS (Simple Pattern Recognition)**:
-1. **Basic Comparison**: "Which item is MOST similar to X?"
-2. **Simple Grouping**: "Which of these items belong together?"
-3. **Clear Differences**: "What's the main difference between A and B?"
-4. **Obvious Relationships**: "How does X directly affect Y?"
-5. **Basic Prioritization**: "Which is more important: A or B?"
-
-Focus on:
-- Clear, direct relationships
-- Binary choices (this OR that)
-- Observable patterns
-- Concrete examples
-- Single-step reasoning`
-    : existingUnderstanding === "Some - I know the basics"
-    ? `**INTERMEDIATE-LEVEL SYNTHESIS (Pattern Analysis)**:
-1. **Comparative Analysis**: "Among X, Y, and Z, which most influences..."
-2. **Conditional Reasoning**: "Why does X lead to Y, but not always?"
-3. **Pattern Recognition**: "What pattern connects these three items?"
-4. **Trade-offs**: "If you prioritize X, what happens to Y?"
-5. **Contextual Application**: "In scenario A vs B, which approach works?"
-
-Focus on:
-- Multi-factor comparisons
-- Cause-and-effect chains
-- Exceptions to rules
-- Trade-off decisions
-- Context-dependent answers`
-    : `**ADVANCED-LEVEL SYNTHESIS (Complex Analysis)**:
-1. **Counter-intuitive Insights**: "Why might the obvious approach fail?"
-2. **Complex Causality**: "Under what conditions does the pattern reverse?"
-3. **Hidden Relationships**: "What unexpected connection exists between..."
-4. **Multi-constraint Optimization**: "Given constraints A, B, and C, how would you..."
-5. **Misconception Analysis**: "Why does misconception X persist despite evidence?"
-6. **System-level Thinking**: "How do second-order effects change the outcome?"
-
-Focus on:
-- Non-obvious relationships
-- Multiple interacting factors
-- Edge cases and exceptions
-- Strategic thinking
-- Meta-level analysis`
-}
-</difficulty-scaled-frameworks>
-
-<critical-requirements>
-- Questions must match the learner's understanding level
-- Avoid overwhelming beginners with complexity
-- Challenge advanced learners appropriately
-- Focus on "why" and "which" rather than "what" or "list"
-- Include specific constraints or conditions
-- Require choosing/ranking rather than just explaining
-</critical-requirements>
-
-<bad-question-patterns-to-avoid>
-- "Explain how understanding X helps you understand X" (tautological)
-- "Describe all the factors that influence..." (too broad, no analysis)
-- "How do A, B, and C work together?" (vague, descriptive)
-- "What have you learned about..." (pure recall)
-</bad-question-patterns-to-avoid>`,
-      prompt: `<context>
-Concept: ${concept.name}
-Items studied: ${itemsCovered.slice(-10).join(", ")}
-Key topics: ${concept["high-level"].slice(0, 5).join(", ")}
-Learner Level: ${existingUnderstanding}
-</context>
-
-<task>
-Generate ONE precise analytical question appropriate for the learner's level:
-
-${
-  existingUnderstanding === "None - Complete beginner"
-    ? `**BEGINNER QUESTION REQUIREMENTS**:
-1. Reference 2 specific items they've studied
-2. Ask for a simple comparison or grouping
-3. Have a clear, logical answer
-4. Build confidence while testing synthesis
-
-<good-beginner-examples>
-- "Looking at ${itemsCovered[0] || "item A"} and ${
-        itemsCovered[1] || "item B"
-      }, which one is more [specific attribute]? Why?"
-- "You've learned about [X, Y, Z]. Which two are most similar and what makes them alike?"
-- "If you had to choose between [A] and [B] for [simple goal], which would work better?"
-- "What's the biggest difference between [item X] and [item Y] that you've noticed?"
-</good-beginner-examples>`
-    : existingUnderstanding === "Some - I know the basics"
-    ? `**INTERMEDIATE QUESTION REQUIREMENTS**:
-1. Reference 2-3 specific items from those studied
-2. Require comparing, prioritizing, or identifying patterns
-3. Have a reasoned answer with trade-offs
-4. Test analytical thinking
-
-<good-intermediate-examples>
-- "Between ${itemsCovered[0] || "factor A"} and ${
-        itemsCovered[1] || "factor B"
-      }, which has a greater impact on [outcome]? What conditions might change this?"
-- "You've learned about [X, Y, Z]. What pattern connects all three, and which one is the exception?"
-- "If you had to optimize for [goal A] vs [goal B], how would your choice between [item X] and [item Y] change?"
-- "Why does [relationship] work for [items A and B] but not for [item C]?"
-</good-intermediate-examples>`
-    : `**ADVANCED QUESTION REQUIREMENTS**:
-1. Reference multiple specific items with complex relationships
-2. Require identifying non-obvious connections or contradictions
-3. Have nuanced answers with multiple valid perspectives
-4. Challenge assumptions and test deep synthesis
-
-<good-advanced-examples>
-- "Between ${itemsCovered[0] || "factor A"} and ${
-        itemsCovered[1] || "factor B"
-      }, which has a greater impact on [outcome], and under what specific conditions would this hierarchy completely reverse?"
-- "You've learned about [X, Y, Z]. What counter-intuitive relationship exists between them that beginners often miss?"
-- "Why does [common assumption] about [items A and B] seem logical but actually mislead practitioners? What's the real dynamic?"
-- "Given constraints [A, B, C], how would you balance [competing factors] to achieve [complex goal]? What's the key trade-off?"
-</good-advanced-examples>`
-}
-
-<bad-examples-to-avoid>
-- "Explain how [listing items] contribute to [obvious outcome]"
-- "Describe the relationship between [X] and [Y]"
-- "How does understanding [X] help you evaluate [X]?"
-- Questions that are too complex for beginners or too simple for advanced learners
-</bad-examples-to-avoid>
-
-Create a question following the appropriate difficulty level, using the actual items and topics from this concept.
-</task>`,
+      system: highLevelEvaluationPrompts.generationSystem(
+        concept.name,
+        existingUnderstanding
+      ),
+      prompt: highLevelEvaluationPrompts.generationPrompt(
+        concept,
+        itemsCovered,
+        existingUnderstanding
+      ),
     });
 
     return text;

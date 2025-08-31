@@ -5,3 +5,4 @@ courses/*.json
 sessions/*.json
 .DS_Store
 *.log
+learning/

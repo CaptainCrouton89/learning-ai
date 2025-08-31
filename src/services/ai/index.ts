@@ -4,7 +4,7 @@ import { Concept, Course } from "../../types/course.js";
 import { CourseService } from "./courseService.js";
 import { EvaluationService } from "./evaluationService.js";
 import { GenerationService } from "./generationService.js";
-import { learningGoalSuggestionPrompts } from "./prompts.js";
+import { learningGoalSuggestionPrompts } from "./prompts/index.js";
 import { LearningGoalSuggestionsSchema } from "./schemas.js";
 
 export class AIService {
@@ -159,7 +159,6 @@ export class AIService {
       existingUnderstanding
     );
   }
-
 
   async generateConnectionQuestion(
     connections: string[],

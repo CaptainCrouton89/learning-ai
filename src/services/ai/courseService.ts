@@ -1,9 +1,13 @@
 import { openai } from "@ai-sdk/openai";
 import { generateObject, generateText } from "ai";
-import { Course } from "../../types/course.js";
-import { ConceptDetailSchema, CourseGenerationSchema } from "./schemas.js";
-import { conceptDetailPrompts, coursePrompts, topicRefinementPrompts } from "./prompts.js";
 import { z } from "zod";
+import { Course } from "../../types/course.js";
+import {
+  conceptDetailPrompts,
+  coursePrompts,
+  topicRefinementPrompts,
+} from "./prompts/index.js";
+import { ConceptDetailSchema, CourseGenerationSchema } from "./schemas.js";
 
 export class CourseService {
   private smartModel = openai("gpt-4.1");
