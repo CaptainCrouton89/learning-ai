@@ -1,5 +1,5 @@
-import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
+import { models } from "../../config/models.js";
 import { Concept, Course } from "../../types/course.js";
 import {
   conceptAwareHighLevelPrompts,
@@ -11,8 +11,6 @@ import {
 } from "./prompts/index.js";
 
 export class GenerationService {
-  private model = openai("gpt-4.1-mini");
-
   async generateHighLevelQuestion(
     course: Course,
     conversationHistory: Array<{ role: string; content: string }>,
@@ -21,7 +19,7 @@ export class GenerationService {
   ): Promise<string> {
     const backgroundTopics = course.backgroundKnowledge || [];
     const { text } = await generateText({
-      model: this.model,
+      model: models.standard,
       system: highLevelPrompts.questionSystem(
         course.name,
         backgroundTopics,
@@ -56,7 +54,7 @@ Then ask a probing question about ${course.name} that explores foundational unde
     isFirstQuestion: boolean = false
   ): Promise<string> {
     const { text } = await generateText({
-      model: this.model,
+      model: models.standard,
       system: conceptLearningPrompts.questionSystem(
         concept.name,
         concept["high-level"],
@@ -91,7 +89,7 @@ Then generate a focused question or teaching point that explores a specific aspe
     existingUnderstanding: string
   ): Promise<string> {
     const { text } = await generateText({
-      model: this.model,
+      model: models.standard,
       system: connectionPrompts.generationSystem(
         course.name,
         connections,
@@ -116,7 +114,7 @@ Then generate a focused question or teaching point that explores a specific aspe
     evaluation?: string
   ): Promise<string> {
     const { text } = await generateText({
-      model: this.model,
+      model: models.standard,
       system: elaborationPrompts.generationSystem(item, concept.name),
       prompt: elaborationPrompts.generationPrompt(
         item,
@@ -136,7 +134,7 @@ Then generate a focused question or teaching point that explores a specific aspe
     concept: Concept
   ): Promise<string> {
     const { text } = await generateText({
-      model: this.model,
+      model: models.standard,
       system: connectionQuestionPrompts.generationSystem(
         performingItem,
         strugglingItem,
@@ -162,7 +160,7 @@ Then generate a focused question or teaching point that explores a specific aspe
     // Use concept-aware prompts when we have performance data
     if (weakTopics && strugglingItems) {
       const { text } = await generateText({
-        model: this.model,
+        model: models.standard,
         system: conceptAwareHighLevelPrompts.generationSystem(
           concept.name,
           existingUnderstanding,
@@ -182,7 +180,7 @@ Then generate a focused question or teaching point that explores a specific aspe
 
     // Fallback to basic high-level prompts (shouldn't happen in practice)
     const { text } = await generateText({
-      model: this.model,
+      model: models.standard,
       system: conceptAwareHighLevelPrompts.generationSystem(
         concept.name,
         existingUnderstanding,

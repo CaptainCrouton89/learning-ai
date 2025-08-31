@@ -1,6 +1,6 @@
-import { openai } from "@ai-sdk/openai";
 import { generateObject, generateText } from "ai";
 import { z } from "zod";
+import { models } from "../../config/models.js";
 import { Course } from "../../types/course.js";
 import {
   conceptDetailPrompts,
@@ -10,10 +10,6 @@ import {
 import { ConceptDetailSchema, CourseGenerationSchema } from "./schemas.js";
 
 export class CourseService {
-  private smartModel = openai("gpt-5");
-  private lightSmartModel = openai("gpt-5-mini");
-  private fastModel = openai("gpt-4.1-mini");
-
   async analyzeTopic(
     topic: string,
     timeAvailable: string,
@@ -25,7 +21,7 @@ export class CourseService {
     clarifying_questions: string[];
   }> {
     const { object } = await generateObject({
-      model: this.fastModel,
+      model: models.fast,
       schema: z.object({
         is_appropriate: z.boolean(),
         reason: z.string(),
@@ -49,7 +45,7 @@ export class CourseService {
     timeAvailable: string
   ): Promise<string> {
     const { text } = await generateText({
-      model: this.fastModel,
+      model: models.fast,
       system: topicRefinementPrompts.system,
       prompt: topicRefinementPrompts.generateFollowUpPrompt(
         originalTopic,
@@ -71,7 +67,7 @@ export class CourseService {
     console.log("Generating course structure...");
 
     const { object: courseBase } = await generateObject({
-      model: this.smartModel,
+      model: models.reasoningHigh,
       schema: CourseGenerationSchema,
       system: coursePrompts.system,
       providerOptions: {
@@ -91,7 +87,7 @@ export class CourseService {
     const conceptDetails = await Promise.all(
       courseBase.concepts.map(async (concept) => {
         const { object: details } = await generateObject({
-          model: this.lightSmartModel,
+          model: models.reasoningMini,
           schema: ConceptDetailSchema,
           system: conceptDetailPrompts.system,
           prompt: conceptDetailPrompts.userPrompt(

@@ -1,5 +1,5 @@
-import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
+import { models } from "../../config/models.js";
 import { Concept, Course } from "../../types/course.js";
 import { CourseService } from "./courseService.js";
 import { EvaluationService } from "./evaluationService.js";
@@ -11,7 +11,6 @@ export class AIService {
   private courseService = new CourseService();
   private generationService = new GenerationService();
   private evaluationService = new EvaluationService();
-  private fastModel = openai("gpt-4.1-mini");
 
   async analyzeTopic(
     topic: string,
@@ -288,7 +287,7 @@ export class AIService {
     existingUnderstanding: string
   ): Promise<string[]> {
     const { object } = await generateObject({
-      model: this.fastModel,
+      model: models.fast,
       schema: LearningGoalSuggestionsSchema,
       system: learningGoalSuggestionPrompts.system,
       prompt: learningGoalSuggestionPrompts.userPrompt(

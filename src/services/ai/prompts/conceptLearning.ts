@@ -21,7 +21,7 @@ ${topics.map((topic) => `• ${topic}`).join("\n")}
 - Use concrete scenarios when applicable
 ${
   existingUnderstanding === "None - Complete beginner"
-    ? "- Start with foundational concepts and build gradually"
+    ? "- Start with basic concepts and build gradually"
     : existingUnderstanding === "Some - I know the basics"
     ? "- Build on existing knowledge with intermediate complexity"
     : "- Challenge with advanced scenarios and edge cases"
@@ -80,7 +80,7 @@ ${
 - 1: Major misconceptions for a beginner
 - 2: Basic understanding emerging
 - 3: Good beginner-level understanding
-- 4: Strong foundational grasp
+- 4: Strong grasp
 - 5: Exceptional understanding for a beginner`
     : existingUnderstanding === "Some - I know the basics"
     ? `- 0: Below expected baseline

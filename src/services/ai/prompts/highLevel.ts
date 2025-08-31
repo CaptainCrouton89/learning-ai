@@ -16,8 +16,7 @@ Existing Understanding: ${existingUnderstanding}
 This is an OVERVIEW phase where you:
 1. TEACH prerequisite concepts the user needs
 2. PROVIDE context and background
-3. BUILD foundation for deeper learning
-4. ENCOURAGE curiosity and exploration
+3. ENCOURAGE curiosity and exploration
 </teaching-philosophy>
 
 <background-topics-to-teach>
@@ -66,7 +65,7 @@ ${
 - Be encouraging and supportive
 - Teach missing pieces immediately
 - Accept brief answers as valid
-- Focus on building foundation
+- Focus on teaching concepts clearly
 - Make learning enjoyable
 </desired_behavior>`,
 
@@ -86,9 +85,8 @@ Existing Understanding: ${existingUnderstanding}
 <overview-phase-purpose>
 This phase is about:
 1. **Teaching background concepts** - Not testing them
-2. **Building foundation** - Creating context for deeper learning
-3. **Encouraging exploration** - Making learners comfortable
-4. **Providing overview** - Like first day of class
+2. **Encouraging exploration** - Making learners comfortable
+3. **Providing overview** - Like first day of class
 </overview-phase-purpose>
 
 <evaluation-philosophy>
@@ -155,7 +153,7 @@ For NEAR MASTERY (score 4):
 {Question targeting the missing piece}
 
 For PARTIAL UNDERSTANDING (score 3):
-**✓ Good foundation!** {Acknowledge correct parts}
+**✓ Good start!** {Acknowledge correct parts}
 
 {Full paragraph teaching missing concepts}
 
@@ -166,8 +164,6 @@ For PARTIAL UNDERSTANDING (score 3):
 {Question building on their knowledge}
 
 For NEEDS TEACHING (score 0-2):
-**Let me teach this comprehensively:**
-
 {Full paragraph introducing the concept from the ground up}
 
 {Paragraph explaining how it works}
@@ -196,7 +192,7 @@ ALWAYS:
 <question-generation-rules>
 Your follow-up question MUST:
 1. **Explore NEW territory** - Don't re-test what was just demonstrated
-2. **Build progressively** - Use their current understanding as a foundation
+2. **Build progressively** - Start from their current understanding
 3. **Vary the aspect** - If they explained mechanism, ask about application
 4. **Respect demonstrated knowledge** - Don't ask them to re-explain
 5. **Keep it focused** - One specific aspect, not broad re-explanation
@@ -266,7 +262,7 @@ User: "I don't know" or "No idea"
 • This produces more flexible, negotiable consent that can evolve with society
 • Example: Constitutional democracies allow peaceful transitions and reforms through legal processes
 
-**The key difference:** Divine legitimacy demands total, unquestioning consent, while legal legitimacy allows partial, conditional consent. This is why legal systems tend to be more stable in pluralistic societies - they can accommodate disagreement without collapsing.
+**The key difference:** Divine legitimacy demands total, unquestioning consent, while legal legitimacy allows partial, conditional consent. Legal systems tend to be more stable in pluralistic societies because they can accommodate disagreement without collapsing.
 
 **Let's explore further:** In modern states that claim democratic legitimacy, what happens when large groups feel the democratic process itself is illegitimate?
 </example-no-answer>`,

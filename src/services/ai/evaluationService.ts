@@ -1,6 +1,6 @@
-import { openai } from "@ai-sdk/openai";
 import { generateObject, generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
+import { models } from "../../config/models.js";
 import { Concept, Course } from "../../types/course.js";
 import {
   conceptAwareHighLevelPrompts,
@@ -17,8 +17,6 @@ import {
 } from "./schemas.js";
 
 export class EvaluationService {
-  private model = openai("gpt-4.1-mini");
-
   async generateHighLevelResponse(
     userAnswer: string,
     course: Course,
@@ -64,7 +62,10 @@ export class EvaluationService {
     }
 
     // Build messages array with conversation history
-    const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
       {
         role: "system",
         content: highLevelPrompts.evaluationSystemExtended(
@@ -91,7 +92,7 @@ export class EvaluationService {
     });
 
     const result = await generateText({
-      model: this.model,
+      model: models.fast,
       stopWhen: stepCountIs(5), // stop after 5 steps if tools were called
       messages,
       tools: {
@@ -141,7 +142,10 @@ export class EvaluationService {
     }> = [];
 
     // Build messages array with conversation history
-    const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
       {
         role: "system",
         content: conceptLearningPrompts.evaluationSystemExtended(
@@ -168,7 +172,7 @@ export class EvaluationService {
     });
 
     const result = await generateText({
-      model: this.model,
+      model: models.fast,
       messages,
       stopWhen: stepCountIs(5),
       tools: {
@@ -210,7 +214,7 @@ export class EvaluationService {
   ): Promise<{ comprehension: number; response: string; targetTopic: string }> {
     const highLevelTopics = concept["high-level"];
     const { object } = await generateObject({
-      model: this.model,
+      model: models.fast,
       schema: ConceptAnswerEvaluationSchema(highLevelTopics),
       system: conceptLearningPrompts.evaluationSystem(
         concept.name,
@@ -246,7 +250,7 @@ Provide substantive feedback that advances their understanding, then ask a speci
     existingUnderstanding: string
   ): Promise<{ comprehension: number; response: string }> {
     const { object } = await generateObject({
-      model: this.model,
+      model: models.fast,
       schema: FlashcardResponseSchema,
       system: flashcardPrompts
         .evaluationSystem(concept.name, fields, existingUnderstanding)
@@ -273,7 +277,7 @@ Provide substantive feedback that advances their understanding, then ask a speci
     existingUnderstanding: string
   ): Promise<{ response: string; followUp: string | null }> {
     const { text } = await generateText({
-      model: this.model,
+      model: models.fast,
       system: connectionPrompts.evaluationSystem(
         course.name,
         existingUnderstanding
@@ -303,7 +307,7 @@ Provide substantive feedback that advances their understanding, then ask a speci
     concept: Concept
   ): Promise<string> {
     const { text } = await generateText({
-      model: this.model,
+      model: models.fast,
       system: elaborationPrompts.evaluationSystem(item, concept.name),
       prompt: elaborationPrompts.userPrompt(question, item, userAnswer),
     });
@@ -319,7 +323,7 @@ Provide substantive feedback that advances their understanding, then ask a speci
     concept: Concept
   ): Promise<string> {
     const { text } = await generateText({
-      model: this.model,
+      model: models.fast,
       system: connectionQuestionPrompts.evaluationSystem(
         performingItem,
         strugglingItem,
@@ -348,7 +352,7 @@ Provide substantive feedback that advances their understanding, then ask a speci
     // Use concept-aware prompts when we have performance data
     if (weakTopics && strugglingItems) {
       const { text } = await generateText({
-        model: this.model,
+        model: models.fast,
         system: conceptAwareHighLevelPrompts.evaluationSystem(
           concept.name,
           existingUnderstanding,
@@ -368,7 +372,7 @@ Provide substantive feedback that advances their understanding, then ask a speci
 
     // Fallback (shouldn't happen in practice)
     const { text } = await generateText({
-      model: this.model,
+      model: models.fast,
       system: conceptAwareHighLevelPrompts.evaluationSystem(
         concept.name,
         existingUnderstanding,

@@ -267,7 +267,6 @@ For MINIMAL UNDERSTANDING:
 **Here's how ${weakTopics[0]?.topic || "this concept"} works:**
 {Detailed explanation with examples from their flashcards}
 
-**Why this matters:** {Connect to practical understanding}
 
 **Let's verify:** {Simple follow-up to check understanding}
 </response-structure>`,
