@@ -1,15 +1,15 @@
-import { Collection, Db } from 'mongodb';
-import { mongoConnection } from './database/mongoClient.js';
-import { CourseDocument, SessionDocument } from './database/schemas.js';
-import { 
-  Course, 
-  LearningSession, 
-  ConceptProgress, 
-  ItemProgress, 
-  TopicProgress, 
-  ConceptAttempt, 
-  SpecialQuestion 
-} from '../types/course.js';
+import { Collection, Db } from "mongodb";
+import {
+  ConceptAttempt,
+  ConceptProgress,
+  Course,
+  ItemProgress,
+  LearningSession,
+  SpecialQuestion,
+  TopicProgress,
+} from "../types/course.js";
+import { mongoConnection } from "./database/mongoClient.js";
+import { CourseDocument, SessionDocument } from "./database/schemas.js";
 
 export class MongoCourseManager {
   private db: Db | null = null;
@@ -18,9 +18,9 @@ export class MongoCourseManager {
 
   async initialize(): Promise<void> {
     this.db = await mongoConnection.connect();
-    this.coursesCollection = this.db.collection<CourseDocument>('courses');
-    this.sessionsCollection = this.db.collection<SessionDocument>('sessions');
-    
+    this.coursesCollection = this.db.collection<CourseDocument>("courses");
+    this.sessionsCollection = this.db.collection<SessionDocument>("sessions");
+
     // Create indexes for better performance
     await this.coursesCollection.createIndex({ name: 1 }, { unique: true });
     await this.sessionsCollection.createIndex({ courseId: 1 });
@@ -29,32 +29,32 @@ export class MongoCourseManager {
 
   private ensureConnection(): void {
     if (!this.coursesCollection || !this.sessionsCollection) {
-      throw new Error('Database not initialized. Call initialize() first.');
+      throw new Error("Database not initialized. Call initialize() first.");
     }
   }
 
   async saveCourse(course: Course): Promise<void> {
     this.ensureConnection();
-    
+
     const document: CourseDocument = {
       ...course,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
-    await this.coursesCollection!.replaceOne(
-      { name: course.name },
-      document,
-      { upsert: true }
-    );
-    
+    await this.coursesCollection!.replaceOne({ name: course.name }, document, {
+      upsert: true,
+    });
+
     console.log(`Course ${course.name} saved to MongoDB`);
   }
 
   async loadCourse(courseName: string): Promise<Course> {
     this.ensureConnection();
-    
-    const document = await this.coursesCollection!.findOne({ name: courseName });
+
+    const document = await this.coursesCollection!.findOne({
+      name: courseName,
+    });
     if (!document) {
       throw new Error(`Course ${courseName} not found`);
     }
@@ -65,26 +65,27 @@ export class MongoCourseManager {
 
   async listCourses(): Promise<string[]> {
     this.ensureConnection();
-    
-    const courses = await this.coursesCollection!
-      .find({}, { projection: { name: 1 } })
-      .toArray();
-    
-    return courses.map(c => c.name);
+
+    const courses = await this.coursesCollection!.find(
+      {},
+      { projection: { name: 1 } }
+    ).toArray();
+
+    return courses.map((c) => c.name);
   }
 
   async createSession(courseId: string): Promise<LearningSession> {
     this.ensureConnection();
-    
+
     const session: LearningSession = {
       courseId,
-      currentPhase: 'initialization',
+      currentPhase: "initialization",
       conceptsProgress: new Map(),
       conversationHistory: [],
       startTime: new Date(),
       lastActivityTime: new Date(),
-      existingUnderstanding: 'Some - I know the basics',
-      timeAvailable: '15-60min'
+      existingUnderstanding: "Some - I know the basics",
+      timeAvailable: "15-60min",
     };
 
     await this.saveSession(session);
@@ -92,16 +93,22 @@ export class MongoCourseManager {
   }
 
   private sessionToDocument(session: LearningSession): SessionDocument {
-    const conceptsProgressArray = Array.from(session.conceptsProgress.entries()).map(([key, value]) => ({
+    const conceptsProgressArray = Array.from(
+      session.conceptsProgress.entries()
+    ).map(([key, value]) => ({
       conceptName: key,
-      itemsProgress: Array.from(value.itemsProgress.entries()).map(([itemKey, itemValue]) => ({
-        ...itemValue
-      })),
-      topicProgress: Array.from(value.topicProgress.entries()).map(([topicKey, topicValue]) => ({
-        ...topicValue
-      })),
+      itemsProgress: Array.from(value.itemsProgress.entries()).map(
+        ([itemKey, itemValue]) => ({
+          ...itemValue,
+        })
+      ),
+      topicProgress: Array.from(value.topicProgress.entries()).map(
+        ([topicKey, topicValue]) => ({
+          ...topicValue,
+        })
+      ),
       specialQuestionsAsked: value.specialQuestionsAsked || [],
-      globalPositionCounter: value.globalPositionCounter || 0
+      globalPositionCounter: value.globalPositionCounter || 0,
     }));
 
     return {
@@ -115,32 +122,32 @@ export class MongoCourseManager {
       existingUnderstanding: session.existingUnderstanding,
       timeAvailable: session.timeAvailable,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
   private documentToSession(document: SessionDocument): LearningSession {
     const conceptsProgress = new Map<string, ConceptProgress>();
-    
-    document.conceptsProgress.forEach(conceptDoc => {
+
+    document.conceptsProgress.forEach((conceptDoc) => {
       const itemsProgress = new Map<string, ItemProgress>();
-      conceptDoc.itemsProgress.forEach(item => {
+      conceptDoc.itemsProgress.forEach((item) => {
         const { itemName, ...rest } = item;
         itemsProgress.set(itemName, { itemName, ...rest });
       });
-      
+
       const topicProgress = new Map<string, TopicProgress>();
-      conceptDoc.topicProgress.forEach(topic => {
+      conceptDoc.topicProgress.forEach((topic) => {
         const { topicName, ...rest } = topic;
         topicProgress.set(topicName, { topicName, ...rest });
       });
-      
+
       conceptsProgress.set(conceptDoc.conceptName, {
         conceptName: conceptDoc.conceptName,
         itemsProgress,
         topicProgress,
         specialQuestionsAsked: conceptDoc.specialQuestionsAsked,
-        globalPositionCounter: conceptDoc.globalPositionCounter
+        globalPositionCounter: conceptDoc.globalPositionCounter,
       });
     });
 
@@ -153,15 +160,15 @@ export class MongoCourseManager {
       startTime: document.startTime,
       lastActivityTime: document.lastActivityTime,
       existingUnderstanding: document.existingUnderstanding,
-      timeAvailable: document.timeAvailable
+      timeAvailable: document.timeAvailable,
     };
   }
 
   async saveSession(session: LearningSession): Promise<void> {
     this.ensureConnection();
-    
+
     const document = this.sessionToDocument(session);
-    
+
     await this.sessionsCollection!.replaceOne(
       { courseId: session.courseId },
       document,
@@ -171,12 +178,12 @@ export class MongoCourseManager {
 
   async loadSession(courseId: string): Promise<LearningSession | null> {
     this.ensureConnection();
-    
+
     const document = await this.sessionsCollection!.findOne(
       { courseId },
       { sort: { updatedAt: -1 } }
     );
-    
+
     if (!document) {
       return null;
     }
@@ -185,8 +192,8 @@ export class MongoCourseManager {
   }
 
   async updateSessionPhase(
-    session: LearningSession, 
-    phase: LearningSession['currentPhase'],
+    session: LearningSession,
+    phase: LearningSession["currentPhase"],
     currentConcept?: string
   ): Promise<void> {
     session.currentPhase = phase;
@@ -199,13 +206,13 @@ export class MongoCourseManager {
 
   async addConversationEntry(
     session: LearningSession,
-    role: 'user' | 'assistant',
+    role: "user" | "assistant",
     content: string
   ): Promise<void> {
     session.conversationHistory.push({
       role,
       content,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
     session.lastActivityTime = new Date();
     await this.saveSession(session);
@@ -233,12 +240,12 @@ export class MongoCourseManager {
         itemsProgress: new Map(),
         topicProgress: new Map(),
         specialQuestionsAsked: [],
-        globalPositionCounter: 0
+        globalPositionCounter: 0,
       });
     }
 
     const conceptProgress = session.conceptsProgress.get(conceptName)!;
-    
+
     if (!conceptProgress.itemsProgress.has(itemName)) {
       conceptProgress.itemsProgress.set(itemName, {
         itemName,
@@ -247,14 +254,14 @@ export class MongoCourseManager {
         easeFactor: 2.5,
         interval: 0,
         lastReviewPosition: 0,
-        nextDuePosition: 0
+        nextDuePosition: 0,
       });
     }
 
     const itemProgress = conceptProgress.itemsProgress.get(itemName)!;
     itemProgress.attempts.push({
       ...attempt,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     if (scheduling) {
@@ -271,7 +278,11 @@ export class MongoCourseManager {
     await this.saveSession(session);
   }
 
-  isItemMastered(session: LearningSession, conceptName: string, itemName: string): boolean {
+  isItemMastered(
+    session: LearningSession,
+    conceptName: string,
+    itemName: string
+  ): boolean {
     const conceptProgress = session.conceptsProgress.get(conceptName);
     if (!conceptProgress) return false;
 
@@ -304,18 +315,18 @@ export class MongoCourseManager {
         itemsProgress: new Map(),
         topicProgress: new Map(),
         specialQuestionsAsked: [],
-        globalPositionCounter: 0
+        globalPositionCounter: 0,
       });
     }
 
     const conceptProgress = session.conceptsProgress.get(conceptName)!;
     const topicName = attempt.aiResponse.targetTopic;
-    
+
     if (!conceptProgress.topicProgress.has(topicName)) {
       conceptProgress.topicProgress.set(topicName, {
         topicName,
         currentComprehension: 0,
-        attempts: []
+        attempts: [],
       });
     }
 
@@ -330,7 +341,11 @@ export class MongoCourseManager {
     await this.saveSession(session);
   }
 
-  isTopicMastered(session: LearningSession, conceptName: string, topicName: string): boolean {
+  isTopicMastered(
+    session: LearningSession,
+    conceptName: string,
+    topicName: string
+  ): boolean {
     const conceptProgress = session.conceptsProgress.get(conceptName);
     if (!conceptProgress) return false;
 
@@ -338,30 +353,41 @@ export class MongoCourseManager {
     return topicProgress ? topicProgress.currentComprehension >= 5 : false;
   }
 
-  getUnmasteredTopics(session: LearningSession, conceptName: string, allTopics: string[]): string[] {
+  getUnmasteredTopics(
+    session: LearningSession,
+    conceptName: string,
+    allTopics: string[]
+  ): string[] {
     const conceptProgress = session.conceptsProgress.get(conceptName);
     if (!conceptProgress) return allTopics;
 
     const threshold = 5;
 
-    return allTopics.filter(topic => {
+    return allTopics.filter((topic) => {
       const topicProgress = conceptProgress.topicProgress.get(topic);
       return !topicProgress || topicProgress.currentComprehension < threshold;
     });
   }
 
-  getAllTopicsComprehension(session: LearningSession, conceptName: string, allTopics: string[]): Map<string, number> {
+  getAllTopicsComprehension(
+    session: LearningSession,
+    conceptName: string,
+    allTopics: string[]
+  ): Map<string, number> {
     const result = new Map<string, number>();
     const conceptProgress = session.conceptsProgress.get(conceptName);
-    
-    allTopics.forEach(topic => {
+
+    allTopics.forEach((topic) => {
       if (conceptProgress?.topicProgress.has(topic)) {
-        result.set(topic, conceptProgress.topicProgress.get(topic)!.currentComprehension);
+        result.set(
+          topic,
+          conceptProgress.topicProgress.get(topic)!.currentComprehension
+        );
       } else {
         result.set(topic, 0);
       }
     });
-    
+
     return result;
   }
 
@@ -391,22 +417,31 @@ export class MongoCourseManager {
     const conceptProgress = session.conceptsProgress.get(conceptName);
     if (!conceptProgress) return [];
 
-    const strugglingItems: Array<{ item: string; averageComprehension: number }> = [];
+    const strugglingItems: Array<{
+      item: string;
+      averageComprehension: number;
+    }> = [];
 
     conceptProgress.itemsProgress.forEach((progress, item) => {
       if (progress.attempts.length > 0) {
-        const avgComprehension = progress.attempts.reduce(
-          (sum, attempt) => sum + attempt.aiResponse.comprehension,
-          0
-        ) / progress.attempts.length;
+        const avgComprehension =
+          progress.attempts.reduce(
+            (sum, attempt) => sum + attempt.aiResponse.comprehension,
+            0
+          ) / progress.attempts.length;
 
         if (avgComprehension <= threshold) {
-          strugglingItems.push({ item, averageComprehension: avgComprehension });
+          strugglingItems.push({
+            item,
+            averageComprehension: avgComprehension,
+          });
         }
       }
     });
 
-    return strugglingItems.sort((a, b) => a.averageComprehension - b.averageComprehension);
+    return strugglingItems.sort(
+      (a, b) => a.averageComprehension - b.averageComprehension
+    );
   }
 
   getWellPerformingItems(
@@ -417,22 +452,31 @@ export class MongoCourseManager {
     const conceptProgress = session.conceptsProgress.get(conceptName);
     if (!conceptProgress) return [];
 
-    const performingItems: Array<{ item: string; averageComprehension: number }> = [];
+    const performingItems: Array<{
+      item: string;
+      averageComprehension: number;
+    }> = [];
 
     conceptProgress.itemsProgress.forEach((progress, item) => {
       if (progress.attempts.length > 0) {
-        const avgComprehension = progress.attempts.reduce(
-          (sum, attempt) => sum + attempt.aiResponse.comprehension,
-          0
-        ) / progress.attempts.length;
+        const avgComprehension =
+          progress.attempts.reduce(
+            (sum, attempt) => sum + attempt.aiResponse.comprehension,
+            0
+          ) / progress.attempts.length;
 
         if (avgComprehension >= threshold) {
-          performingItems.push({ item, averageComprehension: avgComprehension });
+          performingItems.push({
+            item,
+            averageComprehension: avgComprehension,
+          });
         }
       }
     });
 
-    return performingItems.sort((a, b) => b.averageComprehension - a.averageComprehension);
+    return performingItems.sort(
+      (a, b) => b.averageComprehension - a.averageComprehension
+    );
   }
 
   getLastAttemptComprehension(
@@ -446,14 +490,20 @@ export class MongoCourseManager {
     const itemProgress = conceptProgress.itemsProgress.get(item);
     if (!itemProgress || itemProgress.attempts.length === 0) return null;
 
-    return itemProgress.attempts[itemProgress.attempts.length - 1].aiResponse.comprehension;
+    return itemProgress.attempts[itemProgress.attempts.length - 1].aiResponse
+      .comprehension;
   }
 
   getItemScheduling(
     session: LearningSession,
     conceptName: string,
     itemName: string
-  ): { easeFactor: number; interval: number; nextDuePosition: number; successCount: number } | null {
+  ): {
+    easeFactor: number;
+    interval: number;
+    nextDuePosition: number;
+    successCount: number;
+  } | null {
     const conceptProgress = session.conceptsProgress.get(conceptName);
     if (!conceptProgress) return null;
 
@@ -464,7 +514,7 @@ export class MongoCourseManager {
       easeFactor: itemProgress.easeFactor,
       interval: itemProgress.interval,
       nextDuePosition: itemProgress.nextDuePosition,
-      successCount: itemProgress.successCount
+      successCount: itemProgress.successCount,
     };
   }
 
@@ -476,15 +526,12 @@ export class MongoCourseManager {
     if (!conceptProgress) {
       throw new Error(`Concept ${conceptName} not found in session`);
     }
-    
+
     conceptProgress.globalPositionCounter++;
     return conceptProgress.globalPositionCounter;
   }
 
-  getGlobalPosition(
-    session: LearningSession,
-    conceptName: string
-  ): number {
+  getGlobalPosition(session: LearningSession, conceptName: string): number {
     const conceptProgress = session.conceptsProgress.get(conceptName);
     return conceptProgress?.globalPositionCounter || 0;
   }
