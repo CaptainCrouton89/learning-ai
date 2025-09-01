@@ -163,15 +163,24 @@ export class ConceptLearningPhase {
 
       await courseManager.addConversationEntry(session, "user", answer);
 
-      // Get feedback with comprehension scores in a single call
-      const { response, comprehensionUpdates } =
-        await this.ai.generateConceptResponse(
+      // Get feedback and comprehension scores in parallel
+      const [response, comprehensionUpdates] = await Promise.all([
+        this.ai.generateConceptResponse(
           answer,
           concept,
           session.conversationHistory.slice(-10),
           session.existingUnderstanding,
           unmasteredTopics
-        );
+        ),
+        this.ai.scoreComprehension(
+          answer,
+          concept["high-level"],
+          session.conversationHistory.slice(-10),
+          session.existingUnderstanding,
+          "concept",
+          concept.name
+        )
+      ]);
 
       // Display feedback first
       console.log(chalk.green(`\n${response}\n`));

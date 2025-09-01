@@ -1,4 +1,4 @@
-import { generateObject, generateText, stepCountIs, tool } from "ai";
+import { generateObject, generateText, tool } from "ai";
 import { z } from "zod";
 import { models } from "../../config/models.js";
 import { Concept, Course } from "../../types/course.js";
@@ -17,26 +17,100 @@ import {
 } from "./schemas.js";
 
 export class EvaluationService {
+  async scoreComprehension(
+    userAnswer: string,
+    topics: string[],
+    conversationHistory: Array<{ role: string; content: string }>,
+    existingUnderstanding: string,
+    contextType: "high-level" | "concept",
+    conceptName?: string
+  ): Promise<Array<{ topic: string; comprehension: number }>> {
+    const comprehensionUpdates: Array<{
+      topic: string;
+      comprehension: number;
+    }> = [];
+
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: `You are evaluating comprehension of topics based on a user's response.
+        
+Context: ${contextType === "high-level" ? "Course overview" : `Learning ${conceptName}`}
+User Level: ${existingUnderstanding}
+Topics to evaluate: ${topics.join(", ")}
+
+Scoring guidelines:
+- 0-2: No or incorrect understanding
+- 3: Basic understanding demonstrated
+- 4: Good understanding with minor gaps
+- 5: Full mastery demonstrated
+
+IMPORTANT: Only score topics that the user ACTUALLY addressed in their response.
+Do not score topics that weren't mentioned.`,
+      },
+    ];
+
+    // Add conversation history for context
+    conversationHistory.slice(-6).forEach((entry) => {
+      messages.push({
+        role: entry.role === "user" ? "user" : "assistant",
+        content: entry.content,
+      });
+    });
+
+    // Add the current user answer
+    messages.push({
+      role: "user",
+      content: userAnswer,
+    });
+
+    const result = await generateText({
+      model: models.fast,
+      messages,
+      tools: {
+        update_comprehension: tool({
+          description:
+            "Update comprehension score for a specific topic the user addressed",
+          inputSchema: z.object({
+            topic: z.enum(topics as [string, ...string[]]),
+            comprehension: z.number().min(0).max(5).describe("Score from 0-5"),
+          }),
+          execute: async ({ topic, comprehension }) => {
+            const existing = comprehensionUpdates.find(
+              (u) => u.topic === topic
+            );
+            if (!existing || comprehension > existing.comprehension) {
+              if (existing) {
+                existing.comprehension = comprehension;
+              } else {
+                comprehensionUpdates.push({ topic, comprehension });
+              }
+              return `Scored ${topic}: ${comprehension}/5`;
+            }
+            return `Kept ${topic} at ${existing.comprehension}/5`;
+          },
+        }),
+      },
+    });
+
+    return comprehensionUpdates;
+  }
+
   async generateHighLevelResponse(
     userAnswer: string,
     course: Course,
     conversationHistory: Array<{ role: string; content: string }>,
     existingUnderstanding: string,
     comprehensionProgress?: Map<string, number>
-  ): Promise<{
-    response: string;
-    comprehensionUpdates: Array<{ topic: string; comprehension: number }>;
-  }> {
+  ): Promise<string> {
     // Use backgroundKnowledge if available, otherwise fall back to concept names
     const topicsToTeach =
       course.backgroundKnowledge && course.backgroundKnowledge.length > 0
         ? course.backgroundKnowledge
         : course.concepts.map((c) => c.name);
-
-    const comprehensionUpdates: Array<{
-      topic: string;
-      comprehension: number;
-    }> = [];
 
     // Format progress for the prompt with emphasis on what needs work
     let progressSummary = "No prior progress";
@@ -69,13 +143,13 @@ export class EvaluationService {
       {
         role: "system",
         content:
-          highLevelPrompts.evaluationSystemExtended(
+          highLevelPrompts.evaluationSystem(
             course.name,
             topicsToTeach,
-            existingUnderstanding,
-            progressSummary
+            existingUnderstanding
           ) +
-          "\n\nREMEMBER: Always include response length guidance in your follow-up questions (e.g., 'In 2-3 sentences...', 'In a paragraph...', 'In a few words...').",
+          `\n\nCurrent progress:\n${progressSummary}\n\n` +
+          "REMEMBER: Always include response length guidance in your follow-up questions (e.g., 'In 2-3 sentences...', 'In a paragraph...', 'In a few words...').",
       },
     ];
 
@@ -95,36 +169,10 @@ export class EvaluationService {
 
     const result = await generateText({
       model: models.fast,
-      stopWhen: stepCountIs(5), // stop after 5 steps if tools were called
       messages,
-      tools: {
-        update_comprehension: tool({
-          description:
-            "Update comprehension score for a specific topic the user addressed",
-          inputSchema: z.object({
-            topic: z.enum(topicsToTeach as [string, ...string[]]),
-            comprehension: z.number().min(0).max(5).describe("Score from 0-5"),
-          }),
-          execute: async ({ topic, comprehension }) => {
-            // Only update if new score is higher than existing
-            const existing = comprehensionUpdates.find(
-              (u) => u.topic === topic
-            );
-            if (!existing || comprehension > existing.comprehension) {
-              if (existing) {
-                existing.comprehension = comprehension;
-              } else {
-                comprehensionUpdates.push({ topic, comprehension });
-              }
-              return `Updated ${topic} comprehension to ${comprehension}/5`;
-            }
-            return `Kept ${topic} comprehension at ${existing.comprehension}/5 (new score ${comprehension} not higher)`;
-          },
-        }),
-      },
     });
 
-    return { response: result.text, comprehensionUpdates };
+    return result.text;
   }
 
   async generateConceptResponse(
@@ -133,15 +181,8 @@ export class EvaluationService {
     conversationHistory: Array<{ role: string; content: string }>,
     existingUnderstanding: string,
     unmasteredTopics?: string[]
-  ): Promise<{
-    response: string;
-    comprehensionUpdates: Array<{ topic: string; comprehension: number }>;
-  }> {
+  ): Promise<string> {
     const highLevelTopics = concept["high-level"];
-    const comprehensionUpdates: Array<{
-      topic: string;
-      comprehension: number;
-    }> = [];
 
     // Build messages array with conversation history
     const messages: Array<{
@@ -151,7 +192,7 @@ export class EvaluationService {
       {
         role: "system",
         content:
-          conceptLearningPrompts.evaluationSystemExtended(
+          conceptLearningPrompts.evaluationSystem(
             concept.name,
             highLevelTopics,
             unmasteredTopics,
@@ -178,35 +219,9 @@ export class EvaluationService {
     const result = await generateText({
       model: models.standard,
       messages,
-      stopWhen: stepCountIs(5),
-      tools: {
-        update_comprehension: tool({
-          description:
-            "Update comprehension score for a specific topic the user addressed",
-          inputSchema: z.object({
-            topic: z.enum(highLevelTopics as [string, ...string[]]),
-            comprehension: z.number().min(0).max(5).describe("Score from 0-5"),
-          }),
-          execute: async ({ topic, comprehension }) => {
-            // Only update if new score is higher than existing
-            const existing = comprehensionUpdates.find(
-              (u) => u.topic === topic
-            );
-            if (!existing || comprehension > existing.comprehension) {
-              if (existing) {
-                existing.comprehension = comprehension;
-              } else {
-                comprehensionUpdates.push({ topic, comprehension });
-              }
-              return `Updated ${topic} comprehension to ${comprehension}/5`;
-            }
-            return `Kept ${topic} comprehension at ${existing.comprehension}/5 (new score ${comprehension} not higher)`;
-          },
-        }),
-      },
     });
 
-    return { response: result.text, comprehensionUpdates };
+    return result.text;
   }
 
   async evaluateConceptAnswer(
@@ -217,28 +232,41 @@ export class EvaluationService {
     existingUnderstanding: string = "Some - I know the basics"
   ): Promise<{ comprehension: number; response: string; targetTopic: string }> {
     const highLevelTopics = concept["high-level"];
+    
+    // Build messages array with conversation history
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: conceptLearningPrompts.evaluationSystem(
+          concept.name,
+          highLevelTopics,
+          unmasteredTopics,
+          existingUnderstanding
+        ),
+      },
+    ];
+
+    // Add the last 10 conversation history entries as proper messages
+    conversationHistory.slice(-10).forEach((entry) => {
+      messages.push({
+        role: entry.role === "user" ? "user" : "assistant",
+        content: entry.content,
+      });
+    });
+
+    // Add the current user answer
+    messages.push({
+      role: "user",
+      content: userAnswer,
+    });
+    
     const { object } = await generateObject({
       model: models.fast,
       schema: ConceptAnswerEvaluationSchema(highLevelTopics),
-      system: conceptLearningPrompts.evaluationSystem(
-        concept.name,
-        highLevelTopics,
-        unmasteredTopics,
-        existingUnderstanding
-      ),
-      prompt: `<user-response>
-${userAnswer}
-</user-response>
-
-<context>
-Recent conversation:
-${conversationHistory
-  .slice(-10)
-  .map((entry) => `${entry.role}: ${entry.content}`)
-  .join("\n\n")}
-</context>
-
-Provide substantive feedback that advances their understanding, then ask a specific follow-up question. Score their comprehension and identify the topic addressed.`,
+      messages,
     });
 
     return object;
@@ -253,22 +281,45 @@ Provide substantive feedback that advances their understanding, then ask a speci
     previousAttempts: Array<{ userAnswer: string; aiResponse: string }>,
     existingUnderstanding: string
   ): Promise<{ comprehension: number; response: string }> {
+    // Build messages array with previous attempts as conversation history
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: flashcardPrompts
+          .evaluationSystem(concept.name, fields, existingUnderstanding)
+          .replace("{item}", item)
+          .replace(
+            otherConcepts[0] || "another concept",
+            otherConcepts[0] || "another concept"
+          ),
+      },
+    ];
+    
+    // Add previous attempts as conversation history
+    previousAttempts.forEach((attempt) => {
+      messages.push({
+        role: "user",
+        content: attempt.userAnswer,
+      });
+      messages.push({
+        role: "assistant",
+        content: attempt.aiResponse,
+      });
+    });
+    
+    // Add current user answer
+    messages.push({
+      role: "user",
+      content: userAnswer,
+    });
+    
     const { object } = await generateObject({
       model: models.fast,
       schema: FlashcardResponseSchema,
-      system: flashcardPrompts
-        .evaluationSystem(concept.name, fields, existingUnderstanding)
-        .replace("{item}", item)
-        .replace(
-          otherConcepts[0] || "another concept",
-          otherConcepts[0] || "another concept"
-        ),
-      prompt: flashcardPrompts.userPrompt(
-        item,
-        fields,
-        userAnswer,
-        previousAttempts
-      ),
+      messages,
     });
 
     return object;
@@ -280,13 +331,31 @@ Provide substantive feedback that advances their understanding, then ask a speci
     course: Course,
     existingUnderstanding: string
   ): Promise<{ response: string; followUp: string | null }> {
+    // Build messages array
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: connectionPrompts.evaluationSystem(
+          course.name,
+          existingUnderstanding
+        ),
+      },
+      {
+        role: "assistant",
+        content: question,
+      },
+      {
+        role: "user",
+        content: userAnswer,
+      },
+    ];
+    
     const { text } = await generateText({
       model: models.fast,
-      system: connectionPrompts.evaluationSystem(
-        course.name,
-        existingUnderstanding
-      ),
-      prompt: connectionPrompts.userPrompt(question, userAnswer),
+      messages,
     });
 
     const lines = text.split("\n");
@@ -310,10 +379,28 @@ Provide substantive feedback that advances their understanding, then ask a speci
     item: string,
     concept: Concept
   ): Promise<string> {
+    // Build messages array
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: elaborationPrompts.evaluationSystem(item, concept.name),
+      },
+      {
+        role: "assistant",
+        content: question,
+      },
+      {
+        role: "user",
+        content: userAnswer,
+      },
+    ];
+    
     const { text } = await generateText({
       model: models.fast,
-      system: elaborationPrompts.evaluationSystem(item, concept.name),
-      prompt: elaborationPrompts.userPrompt(question, item, userAnswer),
+      messages,
     });
 
     return text;
@@ -326,19 +413,32 @@ Provide substantive feedback that advances their understanding, then ask a speci
     strugglingItem: string,
     concept: Concept
   ): Promise<string> {
+    // Build messages array
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: connectionQuestionPrompts.evaluationSystem(
+          performingItem,
+          strugglingItem,
+          concept.name
+        ),
+      },
+      {
+        role: "assistant",
+        content: question,
+      },
+      {
+        role: "user",
+        content: userAnswer,
+      },
+    ];
+    
     const { text } = await generateText({
       model: models.fast,
-      system: connectionQuestionPrompts.evaluationSystem(
-        performingItem,
-        strugglingItem,
-        concept.name
-      ),
-      prompt: connectionQuestionPrompts.userPrompt(
-        question,
-        performingItem,
-        strugglingItem,
-        userAnswer
-      ),
+      messages,
     });
 
     return text;
@@ -353,43 +453,39 @@ Provide substantive feedback that advances their understanding, then ask a speci
     weakTopics?: Array<{ topic: string; comprehension: number }>,
     strugglingItems?: Array<{ item: string; averageComprehension: number }>
   ): Promise<string> {
-    // Use concept-aware prompts when we have performance data
-    if (weakTopics && strugglingItems) {
-      const { text } = await generateText({
-        model: models.fast,
-        system: conceptAwareHighLevelPrompts.evaluationSystem(
+    // Build messages array
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: conceptAwareHighLevelPrompts.evaluationSystem(
           concept.name,
           existingUnderstanding,
-          weakTopics
+          weakTopics || []
         ),
-        prompt: conceptAwareHighLevelPrompts.userPrompt(
-          question,
-          itemsCovered,
-          concept["high-level"],
-          userAnswer,
-          weakTopics,
-          strugglingItems
-        ),
-      });
-      return text;
+      },
+      {
+        role: "assistant",
+        content: question,
+      },
+      {
+        role: "user",
+        content: userAnswer,
+      },
+    ];
+    
+    // Add context to the user message based on performance data
+    if (weakTopics && strugglingItems) {
+      messages[messages.length - 1].content += `\n\nContext: Items covered: ${itemsCovered.join(", ")}. High-level topics: ${concept["high-level"].join(", ")}. Weak topics: ${weakTopics.map(t => `${t.topic} (${t.comprehension}/5)`).join(", ")}. Struggling items: ${strugglingItems.map(i => i.item).join(", ")}.`;
+    } else {
+      messages[messages.length - 1].content += `\n\nContext: Items covered: ${itemsCovered.join(", ")}. High-level topics: ${concept["high-level"].join(", ")}.`;
     }
-
-    // Fallback (shouldn't happen in practice)
+    
     const { text } = await generateText({
       model: models.fast,
-      system: conceptAwareHighLevelPrompts.evaluationSystem(
-        concept.name,
-        existingUnderstanding,
-        []
-      ),
-      prompt: conceptAwareHighLevelPrompts.userPrompt(
-        question,
-        itemsCovered,
-        concept["high-level"],
-        userAnswer,
-        [],
-        []
-      ),
+      messages,
     });
 
     return text;

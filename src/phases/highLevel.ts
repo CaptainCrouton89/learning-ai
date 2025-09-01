@@ -142,15 +142,23 @@ export class HighLevelPhase {
           highLevelTopics
         );
 
-      // Get feedback with comprehension scores in a single call
-      const { response, comprehensionUpdates } =
-        await this.ai.generateHighLevelResponse(
+      // Get feedback and comprehension scores in parallel
+      const [response, comprehensionUpdates] = await Promise.all([
+        this.ai.generateHighLevelResponse(
           answer,
           course,
           session.conversationHistory.slice(-10),
           session.existingUnderstanding || "Some - I know the basics",
           comprehensionProgress
-        );
+        ),
+        this.ai.scoreComprehension(
+          answer,
+          highLevelTopics,
+          session.conversationHistory.slice(-10),
+          session.existingUnderstanding || "Some - I know the basics",
+          "high-level"
+        )
+      ]);
 
       // Display feedback first
       console.log(chalk.green(`\n${response}\n`));
@@ -342,7 +350,7 @@ export class HighLevelPhase {
           highLevelTopics
         );
 
-      const { response } = await this.ai.generateHighLevelResponse(
+      const response = await this.ai.generateHighLevelResponse(
         question,
         course,
         session.conversationHistory.slice(-10),

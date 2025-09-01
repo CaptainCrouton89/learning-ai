@@ -18,32 +18,48 @@ export class GenerationService {
     isFirstQuestion: boolean = false
   ): Promise<string> {
     const backgroundTopics = course.backgroundKnowledge || [];
-    const { text } = await generateText({
-      model: models.standard,
-      system: highLevelPrompts.questionSystem(
-        course.name,
-        backgroundTopics,
-        existingUnderstanding
-      ),
-      prompt: `<context>
-${
-  conversationHistory.length > 0
-    ? `Previous discussion:\n${conversationHistory
-        .slice(-10)
-        .map((entry) => `${entry.role}: ${entry.content}`)
-        .join("\n\n")}`
-    : "Starting the conversation."
-}
-</context>
+    
+    // Build messages array with conversation history
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: highLevelPrompts.questionSystem(
+          course.name,
+          backgroundTopics,
+          existingUnderstanding
+        ),
+      },
+    ];
 
-${
-  isFirstQuestion
-    ? `First, provide a brief 3-paragraph introduction to ${course.name} that gives essential context. Each paragraph should be 2-3 sentences max.
+    // Add the last 10 conversation history entries as proper messages
+    conversationHistory.slice(-10).forEach((entry) => {
+      messages.push({
+        role: entry.role === "user" ? "user" : "assistant",
+        content: entry.content,
+      });
+    });
+
+    // Add a user message to trigger question generation
+    const userPrompt = isFirstQuestion
+      ? `First, provide a brief 3-paragraph introduction to ${course.name} that gives essential context. Each paragraph should be 2-3 sentences max.
 Then ask a probing question about ${course.name} that explores foundational understanding.
 IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sentences...", "In a paragraph...", "In a few words...") based on the complexity of what you're asking.`
-    : `Ask a probing question about ${course.name} that explores foundational understanding.
-IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sentences...", "In a paragraph...", "In a few words...") based on the complexity of what you're asking.`
-}`,
+      : `Ask a probing question about ${course.name} that explores foundational understanding.
+IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sentences...", "In a paragraph...", "In a few words...") based on the complexity of what you're asking.`;
+    
+    messages.push({
+      role: "user",
+      content: conversationHistory.length > 0 
+        ? "Continue the discussion with a new question."
+        : userPrompt,
+    });
+    
+    const { text } = await generateText({
+      model: models.standard,
+      messages,
     });
 
     return text;
@@ -55,32 +71,47 @@ IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sen
     existingUnderstanding: string,
     isFirstQuestion: boolean = false
   ): Promise<string> {
-    const { text } = await generateText({
-      model: models.standard,
-      system: conceptLearningPrompts.questionSystem(
-        concept.name,
-        concept["high-level"],
-        existingUnderstanding
-      ),
-      prompt: `<context>
-${
-  conversationHistory.length > 0
-    ? `Recent discussion:\n${conversationHistory
-        .slice(-10)
-        .map((entry) => `${entry.role}: ${entry.content}`)
-        .join("\n\n")}`
-    : "This is the beginning of our discussion."
-}
-</context>
+    // Build messages array with conversation history
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: conceptLearningPrompts.questionSystem(
+          concept.name,
+          concept["high-level"],
+          existingUnderstanding
+        ),
+      },
+    ];
 
-${
-  isFirstQuestion
-    ? `First, provide a brief 3-paragraph introduction to ${concept.name} that gives essential context. Each paragraph should be 2-3 sentences max.
+    // Add the last 10 conversation history entries as proper messages
+    conversationHistory.slice(-10).forEach((entry) => {
+      messages.push({
+        role: entry.role === "user" ? "user" : "assistant",
+        content: entry.content,
+      });
+    });
+
+    // Add a user message to trigger question generation
+    const userPrompt = isFirstQuestion
+      ? `First, provide a brief 3-paragraph introduction to ${concept.name} that gives essential context. Each paragraph should be 2-3 sentences max.
 Then generate a focused question or teaching point that explores a specific aspect of ${concept.name}.
 IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sentences...", "In a paragraph...", "In a few words...") based on the complexity of what you're asking.`
-    : `Generate a focused question or teaching point that explores a specific aspect of ${concept.name}.
-IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sentences...", "In a paragraph...", "In a few words...") based on the complexity of what you're asking.`
-}`,
+      : `Generate a focused question or teaching point that explores a specific aspect of ${concept.name}.
+IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sentences...", "In a paragraph...", "In a few words...") based on the complexity of what you're asking.`;
+    
+    messages.push({
+      role: "user",
+      content: conversationHistory.length > 0 
+        ? "Continue the discussion with a new question."
+        : userPrompt,
+    });
+    
+    const { text } = await generateText({
+      model: models.standard,
+      messages,
     });
 
     return text;
@@ -92,18 +123,43 @@ IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sen
     previousQuestions: Array<{ question: string; answer: string }>,
     existingUnderstanding: string
   ): Promise<string> {
+    // Build messages array with previous questions as conversation history
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: connectionPrompts.generationSystem(
+          course.name,
+          connections,
+          previousQuestions,
+          existingUnderstanding
+        ),
+      },
+    ];
+    
+    // Add previous questions as conversation history
+    previousQuestions.forEach((qa) => {
+      messages.push({
+        role: "assistant",
+        content: qa.question,
+      });
+      messages.push({
+        role: "user",
+        content: qa.answer,
+      });
+    });
+    
+    // Add prompt to generate new question
+    messages.push({
+      role: "user",
+      content: `Generate a scenario-based question that explores the connections between: ${connections.join(", ")}. Make it practical and thought-provoking.`,
+    });
+    
     const { text } = await generateText({
       model: models.standard,
-      system: connectionPrompts.generationSystem(
-        course.name,
-        connections,
-        previousQuestions,
-        existingUnderstanding
-      ),
-      prompt: connectionPrompts.generationPrompt(
-        connections,
-        previousQuestions
-      ),
+      messages,
     });
 
     return text;
@@ -117,15 +173,38 @@ IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sen
     userAnswer?: string,
     evaluation?: string
   ): Promise<string> {
+    // Build messages array
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: elaborationPrompts.generationSystem(item, concept.name),
+      },
+    ];
+    
+    // Add previous interaction if available
+    if (userAnswer && evaluation) {
+      messages.push({
+        role: "user",
+        content: userAnswer,
+      });
+      messages.push({
+        role: "assistant",
+        content: evaluation,
+      });
+    }
+    
+    // Add prompt to generate elaboration question
+    messages.push({
+      role: "user",
+      content: `Generate a deeper question about "${item}" with fields: ${fields.join(", ")}. Focus on understanding and application.`,
+    });
+    
     const { text } = await generateText({
       model: models.standard,
-      system: elaborationPrompts.generationSystem(item, concept.name),
-      prompt: elaborationPrompts.generationPrompt(
-        item,
-        fields,
-        userAnswer,
-        evaluation
-      ),
+      messages,
     });
 
     return text;
@@ -137,17 +216,28 @@ IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sen
     strugglingItem: string,
     concept: Concept
   ): Promise<string> {
+    // Build messages array
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: connectionQuestionPrompts.generationSystem(
+          performingItem,
+          strugglingItem,
+          concept.name
+        ),
+      },
+      {
+        role: "user",
+        content: `Generate a question that helps connect "${performingItem}" (which the user understands well) to "${strugglingItem}" (which they're struggling with). Make the connection clear and helpful.`,
+      },
+    ];
+    
     const { text } = await generateText({
       model: models.standard,
-      system: connectionQuestionPrompts.generationSystem(
-        performingItem,
-        strugglingItem,
-        concept.name
-      ),
-      prompt: connectionQuestionPrompts.generationPrompt(
-        performingItem,
-        strugglingItem
-      ),
+      messages,
     });
 
     return text;
@@ -161,43 +251,43 @@ IMPORTANT: Include clear guidance on expected response length (e.g., "In 2-3 sen
     weakTopics?: Array<{ topic: string; comprehension: number }>,
     strugglingItems?: Array<{ item: string; averageComprehension: number }>
   ): Promise<string> {
-    // Use concept-aware prompts when we have performance data
-    if (weakTopics && strugglingItems) {
-      const { text } = await generateText({
-        model: models.standard,
-        system: conceptAwareHighLevelPrompts.generationSystem(
+    // Build messages array
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content: conceptAwareHighLevelPrompts.generationSystem(
           concept.name,
           existingUnderstanding,
-          weakTopics,
-          strugglingItems
+          weakTopics || [],
+          strugglingItems || []
         ),
-        prompt: conceptAwareHighLevelPrompts.generationPrompt(
-          concept,
-          itemsCovered,
-          existingUnderstanding,
-          weakTopics,
-          strugglingItems
-        ),
-      });
-      return text;
+      },
+    ];
+    
+    // Build context-aware user prompt
+    let userPrompt = `Generate a high-level synthesis question about ${concept.name}.\nItems covered: ${itemsCovered.join(", ")}.\nHigh-level topics: ${concept["high-level"].join(", ")}.`;
+    
+    if (weakTopics && weakTopics.length > 0) {
+      userPrompt += `\nWeak topics: ${weakTopics.map(t => `${t.topic} (${t.comprehension}/5)`).join(", ")}.`;
     }
-
-    // Fallback to basic high-level prompts (shouldn't happen in practice)
+    
+    if (strugglingItems && strugglingItems.length > 0) {
+      userPrompt += `\nStruggling items: ${strugglingItems.map(i => i.item).join(", ")}.`;
+    }
+    
+    userPrompt += `\nCreate a question that helps synthesize understanding across these areas.`;
+    
+    messages.push({
+      role: "user",
+      content: userPrompt,
+    });
+    
     const { text } = await generateText({
       model: models.standard,
-      system: conceptAwareHighLevelPrompts.generationSystem(
-        concept.name,
-        existingUnderstanding,
-        [],
-        []
-      ),
-      prompt: conceptAwareHighLevelPrompts.generationPrompt(
-        concept,
-        itemsCovered,
-        existingUnderstanding,
-        [],
-        []
-      ),
+      messages,
     });
 
     return text;

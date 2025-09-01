@@ -77,16 +77,31 @@ export class AIService {
     conversationHistory: Array<{ role: string; content: string }>,
     existingUnderstanding: string,
     comprehensionProgress?: Map<string, number>
-  ): Promise<{
-    response: string;
-    comprehensionUpdates: Array<{ topic: string; comprehension: number }>;
-  }> {
+  ): Promise<string> {
     return this.evaluationService.generateHighLevelResponse(
       userAnswer,
       course,
       conversationHistory,
       existingUnderstanding,
       comprehensionProgress
+    );
+  }
+
+  async scoreComprehension(
+    userAnswer: string,
+    topics: string[],
+    conversationHistory: Array<{ role: string; content: string }>,
+    existingUnderstanding: string,
+    contextType: "high-level" | "concept",
+    conceptName?: string
+  ): Promise<Array<{ topic: string; comprehension: number }>> {
+    return this.evaluationService.scoreComprehension(
+      userAnswer,
+      topics,
+      conversationHistory,
+      existingUnderstanding,
+      contextType,
+      conceptName
     );
   }
 
@@ -110,10 +125,7 @@ export class AIService {
     conversationHistory: Array<{ role: string; content: string }>,
     existingUnderstanding: string,
     unmasteredTopics?: string[]
-  ): Promise<{
-    response: string;
-    comprehensionUpdates: Array<{ topic: string; comprehension: number }>;
-  }> {
+  ): Promise<string> {
     return this.evaluationService.generateConceptResponse(
       userAnswer,
       concept,
