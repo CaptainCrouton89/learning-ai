@@ -33,7 +33,7 @@ export class DrawingConnectionsPhase {
         type: 'editor',
         name: 'answer',
         message: 'Your response (press Enter to open editor):',
-        validate: (input) => input.trim().length > 0 || 'Please provide a response'
+        validate: (input: string) => input.trim().length > 0 || 'Please provide a response'
       }]);
 
       await courseManager.addConversationEntry(session, 'user', answer);
@@ -58,7 +58,7 @@ export class DrawingConnectionsPhase {
           type: 'input',
           name: 'followUpAnswer',
           message: 'Your response:',
-          validate: (input) => input.length > 0 || 'Please provide a response'
+          validate: (input: string) => input.length > 0 || 'Please provide a response'
         }]);
 
         await courseManager.addConversationEntry(session, 'user', followUpAnswer);

@@ -17,7 +17,7 @@ export async function listCourses(): Promise<void> {
     
     for (const courseName of courses) {
       const course = await courseManager.loadCourse(courseName);
-      const session = await courseManager.loadSession(courseName);
+      const session = await courseManager.loadSession(courseName, 'cli-user');
       
       console.log(chalk.bold(`  ${courseName}`));
       console.log(chalk.gray(`    Concepts: ${course.concepts.length}`));

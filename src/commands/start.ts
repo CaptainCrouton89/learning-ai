@@ -13,7 +13,7 @@ export async function startLearningSession(options: { file?: string; topic?: str
     const { course, existingUnderstanding, timeAvailable } = await initPhase.start(options);
 
     const courseManager = await getCourseManager();
-    const session = await courseManager.createSession(course.name);
+    const session = await courseManager.createSession(course.name, 'cli-user');
     session.existingUnderstanding = existingUnderstanding;
     session.timeAvailable = timeAvailable;
 

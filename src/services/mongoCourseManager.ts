@@ -7,9 +7,9 @@ import {
   LearningSession,
   SpecialQuestion,
   TopicProgress,
-} from "../types/course.js";
-import { mongoConnection } from "./database/mongoClient.js";
-import { CourseDocument, SessionDocument } from "./database/schemas.js";
+} from '../types/course.js';
+import { mongoConnection } from './database/mongoClient.js';
+import { CourseDocument, SessionDocument } from './database/schemas.js';
 
 export class MongoCourseManager {
   private db: Db | null = null;

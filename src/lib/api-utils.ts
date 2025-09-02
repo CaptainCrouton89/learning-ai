@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ZodSchema, z } from 'zod';
-import { cacheService, CACHE_PREFIXES, CACHE_TTL } from './cache.js';
+import { cacheService, CACHE_PREFIXES, CACHE_TTL } from './cache';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -252,11 +252,11 @@ export async function tryServeFromCache<T>(
  * Cache-aware wrapper for API handlers
  */
 export function withCaching<T = any>(
-  handler: (request: Request, context?: T) => Promise<NextResponse>,
-  getCacheOptions: (request: Request, context?: T) => CacheOptions | null
+  handler: (request: Request, context: T) => Promise<NextResponse>,
+  getCacheOptions: (request: Request, context: T) => Promise<CacheOptions | null> | CacheOptions | null
 ) {
-  return async (request: Request, context?: T): Promise<NextResponse> => {
-    const cacheOptions = getCacheOptions(request, context);
+  return async (request: Request, context: T): Promise<NextResponse> => {
+    const cacheOptions = await Promise.resolve(getCacheOptions(request, context));
     
     // Try to serve from cache for GET requests
     if (request.method === 'GET' && cacheOptions) {

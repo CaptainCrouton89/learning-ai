@@ -7,7 +7,7 @@ import {
   SpecialQuestion,
   Concept
 } from '../../types/course';
-import { cacheService, CACHE_PREFIXES, CACHE_TTL, generateSessionKey, generateCourseKey } from '../../lib/cache.js';
+import { cacheService, CACHE_PREFIXES, CACHE_TTL, generateSessionKey, generateCourseKey } from '../../lib/cache';
 
 // API request/response types
 interface CreateCourseRequest {

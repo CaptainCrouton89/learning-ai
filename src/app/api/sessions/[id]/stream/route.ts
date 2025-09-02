@@ -2,11 +2,11 @@ import { openai } from '@ai-sdk/openai';
 import { streamText, stepCountIs } from 'ai';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { models } from '../../../../../config/models.js';
-import { getCourseManager, STORAGE_TYPE } from '../../../../../config/storage.js';
-import { MongoCourseManager } from '../../../../../services/mongoCourseManager.js';
-import { AIService } from '../../../../../services/ai/index.js';
-import { aiTools } from '../../../../../lib/ai-tools.js';
+import { models } from '../../../../../config/models';
+import { getCourseManager, STORAGE_TYPE } from '../../../../../config/storage';
+import { MongoCourseManager } from '../../../../../services/mongoCourseManager';
+import { AIService } from '../../../../../services/ai/index';
+import { aiTools } from '../../../../../lib/ai-tools';
 
 // Helper function to load session with appropriate parameters
 async function loadSessionSafely(courseManager: any, sessionId: string): Promise<any> {

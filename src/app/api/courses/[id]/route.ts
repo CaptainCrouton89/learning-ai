@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { AIService } from '../../../../services/ai/index.js';
-import { MongoCourseManager } from '../../../../services/mongoCourseManager.js';
+import { AIService } from '../../../../services/ai/index';
+import { MongoCourseManager } from '../../../../services/mongoCourseManager';
 import {
   withErrorHandling,
   withCaching,
@@ -11,9 +11,9 @@ import {
   requestSchemas,
   ApiErrorResponse,
   CacheOptions,
-} from '../../../../lib/api-utils.js';
-import { CACHE_PREFIXES, CACHE_TTL } from '../../../../lib/cache.js';
-import { Course } from '../../../../types/course.js';
+} from '../../../../lib/api-utils';
+import { CACHE_PREFIXES, CACHE_TTL } from '../../../../lib/cache';
+import { Course } from '../../../../types/course';
 
 const aiService = new AIService();
 let courseManager: MongoCourseManager;
@@ -27,20 +27,20 @@ async function getCourseManager(): Promise<MongoCourseManager> {
   return courseManager;
 }
 
-interface RouteContext {
-  params: {
+type RouteContext = {
+  params: Promise<{
     id: string;
-  };
-}
+  }>;
+};
 
 /**
  * GET /api/courses/[id] - Get a specific course by ID
  */
 export const GET = withErrorHandling(
   withCaching<RouteContext>(
-    async (request: Request, context?: RouteContext) => {
+    async (request: Request, context: RouteContext) => {
       const userId = getUserIdFromRequest(request);
-      const { id: courseId } = context?.params || {};
+      const { id: courseId } = await context.params;
 
       if (!courseId) {
         throw new ApiErrorResponse('Course ID is required', 400, 'MISSING_COURSE_ID');
@@ -78,11 +78,12 @@ export const GET = withErrorHandling(
         throw error;
       }
     },
-    (request: Request, context?: RouteContext) => {
-      if (!context?.params.id) return null;
+    async (request: Request, context: RouteContext) => {
+      const params = await context.params;
+      if (!params.id) return null;
       return {
         prefix: CACHE_PREFIXES.COURSE_DATA,
-        key: context.params.id,
+        key: params.id,
         ttl: CACHE_TTL.LONG,
         maxAge: CACHE_TTL.LONG,
         staleWhileRevalidate: CACHE_TTL.VERY_LONG,
@@ -96,7 +97,7 @@ export const GET = withErrorHandling(
  */
 export const PUT = withErrorHandling(async (request: Request, context: RouteContext) => {
   const userId = getUserIdFromRequest(request);
-  const { id: courseId } = context.params;
+  const { id: courseId } = await context.params;
 
   if (!courseId) {
     throw new ApiErrorResponse('Course ID is required', 400, 'MISSING_COURSE_ID');
@@ -142,7 +143,7 @@ export const PUT = withErrorHandling(async (request: Request, context: RouteCont
  */
 export const DELETE = withErrorHandling(async (request: Request, context: RouteContext) => {
   const userId = getUserIdFromRequest(request);
-  const { id: courseId } = context.params;
+  const { id: courseId } = await context.params;
 
   if (!courseId) {
     throw new ApiErrorResponse('Course ID is required', 400, 'MISSING_COURSE_ID');
@@ -162,7 +163,7 @@ export const DELETE = withErrorHandling(async (request: Request, context: RouteC
  */
 export const POST = withErrorHandling(async (request: Request, context: RouteContext) => {
   const userId = getUserIdFromRequest(request);
-  const { id: courseId } = context.params;
+  const { id: courseId } = await context.params;
 
   if (!courseId) {
     throw new ApiErrorResponse('Course ID is required', 400, 'MISSING_COURSE_ID');

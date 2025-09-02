@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 // Note: useChat is not available in ai v5 for React, will use a simplified approach
 // import { useChat } from 'ai';
-import type { AITools } from '../lib/ai-tools.js';
+import type { AITools } from '../lib/ai-tools';
 
 // Simplified message interface to match expected structure
 interface ChatMessage {

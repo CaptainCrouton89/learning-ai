@@ -1,5 +1,5 @@
-import { mongoConnection } from '../services/database/mongoClient.js';
-import { UserDocument, UserPreferences } from '../services/database/userSchemas.js';
+import { mongoConnection } from '../services/database/mongoClient';
+import { UserDocument, UserPreferences } from '../services/database/userSchemas';
 
 // Type definitions for NextAuth (will be available once NextAuth is properly installed)
 interface NextAuthOptions {

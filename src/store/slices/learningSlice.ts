@@ -26,7 +26,7 @@ interface FlashcardState {
   difficulty: 'easy' | 'medium' | 'difficult';
 }
 
-interface LearningState {
+export interface LearningState {
   // Current learning context
   currentPhase: 'initialization' | 'high-level' | 'concept-learning' | 'memorization' | 'drawing-connections' | null;
   currentConcept: Concept | null;

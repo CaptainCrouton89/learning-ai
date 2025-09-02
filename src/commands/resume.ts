@@ -31,7 +31,7 @@ export async function resumeLearningSession(options: { course?: string }): Promi
       courseName = selectedCourse;
     }
 
-    const session = await courseManager.loadSession(courseName);
+    const session = await courseManager.loadSession(courseName, 'cli-user');
     
     if (!session) {
       console.log(chalk.yellow(`\n⚠️ No saved session found for "${courseName}".\n`));
@@ -44,7 +44,7 @@ export async function resumeLearningSession(options: { course?: string }): Promi
 
       if (startNew) {
         const course = await courseManager.loadCourse(courseName);
-        const newSession = await courseManager.createSession(courseName);
+        const newSession = await courseManager.createSession(courseName, 'cli-user');
         await continueFromPhase(course, newSession, 'high-level');
       }
       return;

@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
 import { streamObject, streamText } from 'ai';
 import { z } from 'zod';
-import { AIService } from '../../../../services/ai/index.js';
-import { MongoCourseManager } from '../../../../services/mongoCourseManager.js';
-import { models } from '../../../../config/models.js';
-import { CourseGenerationSchema } from '../../../../services/ai/schemas.js';
+import { AIService } from '../../../../services/ai/index';
+import { MongoCourseManager } from '../../../../services/mongoCourseManager';
+import { models } from '../../../../config/models';
+import { CourseGenerationSchema } from '../../../../services/ai/schemas';
 import {
   withErrorHandling,
   validateRequestBody,
   getUserIdFromRequest,
   ApiErrorResponse,
   createSuccessResponse,
-} from '../../../../lib/api-utils.js';
+} from '../../../../lib/api-utils';
 
 const aiService = new AIService();
 let courseManager: MongoCourseManager;

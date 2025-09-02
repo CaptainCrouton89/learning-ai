@@ -1,9 +1,9 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { EvaluationService } from "../services/ai/evaluationService.js";
-import { getCourseManager, STORAGE_TYPE } from "../config/storage.js";
-import { MongoCourseManager } from "../services/mongoCourseManager.js";
-import type { Course, LearningSession, ConceptAttempt } from "../types/course.js";
+import { EvaluationService } from "../services/ai/evaluationService";
+import { getCourseManager, STORAGE_TYPE } from "../config/storage";
+import { MongoCourseManager } from "../services/mongoCourseManager";
+import type { Course, LearningSession, ConceptAttempt } from "../types/course";
 
 // Helper function to load session with appropriate parameters
 async function loadSessionSafely(courseManager: any, sessionId: string, courseId: string): Promise<LearningSession | null> {

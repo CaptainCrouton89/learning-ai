@@ -34,9 +34,10 @@ export class CourseManager {
       .map(file => file.replace('.json', ''));
   }
 
-  async createSession(courseId: string): Promise<LearningSession> {
+  async createSession(courseId: string, userId: string = 'cli-user'): Promise<LearningSession> {
     const session: LearningSession = {
       courseId,
+      userId,
       currentPhase: 'initialization',
       conceptsProgress: new Map(),
       conversationHistory: [],
@@ -74,7 +75,7 @@ export class CourseManager {
     await fs.writeFile(sessionPath, JSON.stringify(serializable, null, 2));
   }
 
-  async loadSession(courseId: string): Promise<LearningSession | null> {
+  async loadSession(courseId: string, userId: string = 'cli-user'): Promise<LearningSession | null> {
     try {
       const sessionPath = path.join(this.sessionsDir, `${courseId}-session.json`);
       const data = await fs.readFile(sessionPath, 'utf-8');
@@ -107,6 +108,7 @@ export class CourseManager {
 
       return {
         ...parsed,
+        userId: parsed.userId || userId,
         conceptsProgress,
         startTime: new Date(parsed.startTime),
         lastActivityTime: new Date(parsed.lastActivityTime)

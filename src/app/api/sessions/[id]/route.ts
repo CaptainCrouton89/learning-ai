@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { AIService } from '../../../../services/ai/index.js';
-import { MongoCourseManager } from '../../../../services/mongoCourseManager.js';
+import { AIService } from '../../../../services/ai/index';
+import { MongoCourseManager } from '../../../../services/mongoCourseManager';
 import {
   withErrorHandling,
   createSuccessResponse,
@@ -10,8 +10,8 @@ import {
   requestSchemas,
   ApiErrorResponse,
   ApiTypes,
-} from '../../../../lib/api-utils.js';
-import { LearningSession, Course, ConceptAttempt, FlashcardAttempt } from '../../../../types/course.js';
+} from '../../../../lib/api-utils';
+import { LearningSession, Course, ConceptAttempt, FlashcardAttempt } from '../../../../types/course';
 
 const aiService = new AIService();
 let courseManager: MongoCourseManager;
@@ -25,11 +25,11 @@ async function getCourseManager(): Promise<MongoCourseManager> {
   return courseManager;
 }
 
-interface RouteContext {
-  params: {
+type RouteContext = {
+  params: Promise<{
     id: string;
-  };
-}
+  }>;
+};
 
 /**
  * Helper function to calculate session progress
@@ -117,7 +117,7 @@ function parseSessionId(sessionId: string, requestUserId: string): { courseId: s
  */
 export const GET = withErrorHandling(async (request: Request, context: RouteContext) => {
   const requestUserId = getUserIdFromRequest(request);
-  const { id: sessionId } = context.params;
+  const { id: sessionId } = await context.params;
 
   if (!sessionId) {
     throw new ApiErrorResponse('Session ID is required', 400, 'MISSING_SESSION_ID');
@@ -159,7 +159,7 @@ export const GET = withErrorHandling(async (request: Request, context: RouteCont
  */
 export const PUT = withErrorHandling(async (request: Request, context: RouteContext) => {
   const requestUserId = getUserIdFromRequest(request);
-  const { id: sessionId } = context.params;
+  const { id: sessionId } = await context.params;
 
   if (!sessionId) {
     throw new ApiErrorResponse('Session ID is required', 400, 'MISSING_SESSION_ID');
@@ -224,7 +224,7 @@ export const PUT = withErrorHandling(async (request: Request, context: RouteCont
  */
 export const DELETE = withErrorHandling(async (request: Request, context: RouteContext) => {
   const requestUserId = getUserIdFromRequest(request);
-  const { id: sessionId } = context.params;
+  const { id: sessionId } = await context.params;
 
   if (!sessionId) {
     throw new ApiErrorResponse('Session ID is required', 400, 'MISSING_SESSION_ID');
@@ -244,7 +244,7 @@ export const DELETE = withErrorHandling(async (request: Request, context: RouteC
  */
 export const POST = withErrorHandling(async (request: Request, context: RouteContext) => {
   const requestUserId = getUserIdFromRequest(request);
-  const { id: sessionId } = context.params;
+  const { id: sessionId } = await context.params;
 
   if (!sessionId) {
     throw new ApiErrorResponse('Session ID is required', 400, 'MISSING_SESSION_ID');

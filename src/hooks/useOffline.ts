@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { OfflineStorage } from '../lib/offline-storage.js';
+import { OfflineStorage } from '../lib/offline-storage';
 
 export interface OfflineStatus {
   isOnline: boolean;

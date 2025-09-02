@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { OfflineStorage } from './offline-storage.js';
-import { Course, LearningSession } from '../types/course.js';
+import { OfflineStorage } from './offline-storage';
+import { Course, LearningSession } from '../types/course';
 
 interface OfflineContextType {
   isOnline: boolean;

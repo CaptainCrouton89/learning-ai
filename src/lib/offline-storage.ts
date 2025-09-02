@@ -1,4 +1,4 @@
-import { Course, LearningSession } from '../types/course.js';
+import { Course, LearningSession } from '../types/course';
 
 export interface OfflineProgressUpdate {
   id: string;

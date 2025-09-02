@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Course } from '../../types/course';
 
-interface CourseState {
+export interface CourseState {
   courses: Course[];
   currentCourse: Course | null;
   loading: boolean;

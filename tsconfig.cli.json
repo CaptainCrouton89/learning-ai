@@ -16,6 +16,25 @@
     "sourceMap": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", ".next", "src/app", "src/pages"]
+  "include": [
+    "src/commands/**/*",
+    "src/phases/**/*",
+    "src/services/**/*",
+    "src/types/**/*",
+    "src/utils/**/*",
+    "src/config/**/*",
+    "src/index.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".next",
+    "src/app/**/*",
+    "src/pages/**/*",
+    "src/components/**/*",
+    "src/hooks/**/*",
+    "src/store/**/*",
+    "src/lib/**/*",
+    "src/middleware.ts"
+  ]
 }

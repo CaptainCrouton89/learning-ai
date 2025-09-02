@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { AIService } from '../../../services/ai/index.js';
-import { MongoCourseManager } from '../../../services/mongoCourseManager.js';
+import { AIService } from '../../../services/ai/index';
+import { MongoCourseManager } from '../../../services/mongoCourseManager';
 import {
   withErrorHandling,
   createSuccessResponse,
@@ -12,8 +12,8 @@ import {
   commonSchemas,
   ApiErrorResponse,
   ApiTypes,
-} from '../../../lib/api-utils.js';
-import { LearningSession } from '../../../types/course.js';
+} from '../../../lib/api-utils';
+import { LearningSession } from '../../../types/course';
 
 const aiService = new AIService();
 let courseManager: MongoCourseManager;

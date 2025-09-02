@@ -1,13 +1,13 @@
 import { generateObject, generateText } from "ai";
 import { z } from "zod";
-import { models } from "../../config/models.js";
-import { Course } from "../../types/course.js";
+import { models } from '../../config/models.js';
+import { Course } from '../../types/course.js';
 import {
   conceptDetailPrompts,
   coursePrompts,
   topicRefinementPrompts,
-} from "./prompts/index.js";
-import { ConceptDetailSchema, CourseGenerationSchema } from "./schemas.js";
+} from './prompts/index.js';
+import { ConceptDetailSchema, CourseGenerationSchema } from './schemas.js';
 
 export class CourseService {
   async analyzeTopic(

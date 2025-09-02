@@ -9,7 +9,7 @@ import {
   SpecialQuestion
 } from '../../types/course';
 
-interface SessionState {
+export interface SessionState {
   currentSession: LearningSession | null;
   sessions: LearningSession[];
   loading: boolean;
