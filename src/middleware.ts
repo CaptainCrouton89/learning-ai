@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getToken } from 'next-auth/jwt';
 
 export default async function middleware(req: NextRequest) {
-  const session = await auth();
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const { pathname } = req.nextUrl;
   
   // Public routes that don't require authentication
@@ -27,9 +27,9 @@ export default async function middleware(req: NextRequest) {
   
   if (isPublicRoute || isPublicApiRoute) {
     // Add user ID to headers for API routes even if public
-    if (pathname.startsWith('/api') && session?.user?.id) {
+    if (pathname.startsWith('/api') && token?.id) {
       const requestHeaders = new Headers(req.headers);
-      requestHeaders.set('x-user-id', session.user.id);
+      requestHeaders.set('x-user-id', token.id as string);
       
       return NextResponse.next({
         request: {
@@ -41,16 +41,16 @@ export default async function middleware(req: NextRequest) {
   }
 
   // Protected routes - require authentication
-  if (!session) {
+  if (!token) {
     const signInUrl = new URL('/auth/signin', req.url);
     signInUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(signInUrl);
   }
 
   // Add user ID to API request headers for authenticated users
-  if (pathname.startsWith('/api') && session.user?.id) {
+  if (pathname.startsWith('/api') && token.id) {
     const requestHeaders = new Headers(req.headers);
-    requestHeaders.set('x-user-id', session.user.id);
+    requestHeaders.set('x-user-id', token.id as string);
     
     return NextResponse.next({
       request: {

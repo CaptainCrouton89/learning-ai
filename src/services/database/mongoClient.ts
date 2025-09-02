@@ -33,7 +33,16 @@ class MongoConnection {
   private isConnected: boolean = false;
 
   private constructor() {
-    this.client = new MongoClient(uri!);
+    this.client = new MongoClient(uri!, {
+      tls: true,
+      tlsAllowInvalidCertificates: false,
+      tlsAllowInvalidHostnames: false,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 10000,
+      maxPoolSize: 10,
+      minPoolSize: 1
+    });
   }
 
   static getInstance(): MongoConnection {
@@ -74,6 +83,10 @@ class MongoConnection {
       throw new Error('Database not connected. Call connect() first.');
     }
     return this.db;
+  }
+
+  getClient(): MongoClient {
+    return this.client;
   }
 }
 
