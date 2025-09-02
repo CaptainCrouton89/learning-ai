@@ -170,7 +170,7 @@ export function validateQueryParams<T>(
 export function getUserIdFromRequest(request: Request): string {
   const userId = request.headers.get('x-user-id');
   if (!userId) {
-    throw new ApiErrorResponse('User ID not provided in request headers', 401, 'UNAUTHORIZED');
+    throw new ApiErrorResponse('Authentication required. Please sign in to continue.', 401, 'UNAUTHORIZED');
   }
   return userId;
 }
