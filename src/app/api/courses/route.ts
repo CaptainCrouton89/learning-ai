@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { AIService } from '../../../services/ai/index';
-import { MongoCourseManager } from '../../../services/mongoCourseManager';
+import { AIService } from '@/services/ai';
+import { MongoCourseManager } from '@/services/mongoCourseManager';
 import {
   withErrorHandling,
   withCaching,
@@ -14,9 +14,9 @@ import {
   ApiErrorResponse,
   ApiTypes,
   CacheOptions,
-} from '../../../lib/api-utils';
-import { CACHE_PREFIXES, CACHE_TTL } from '../../../lib/cache';
-import { Course } from '../../../types/course';
+} from '@/lib/api-utils';
+import { CACHE_PREFIXES, CACHE_TTL } from '@/lib/cache';
+import { Course } from '@/types/course';
 
 const aiService = new AIService();
 let courseManager: MongoCourseManager;

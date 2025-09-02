@@ -1,5 +1,5 @@
-import { Course, LearningSession, ConceptProgress, ItemProgress, TopicProgress } from '../types/course.js';
-import { PerformanceAnalyzer, StudyRecommendation, FocusArea, OptimalStudyTime, LearningPathSuggestion } from '../lib/performance-analyzer.js';
+import { Course, LearningSession, ConceptProgress, ItemProgress, TopicProgress } from '@/types/course';
+import { PerformanceAnalyzer, StudyRecommendation, FocusArea, OptimalStudyTime, LearningPathSuggestion } from '@/lib/performance-analyzer';
 
 export interface RecommendationOptions {
   includeStudyTimes?: boolean;

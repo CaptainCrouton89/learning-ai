@@ -1,6 +1,6 @@
 import { generateText } from "ai";
-import { models } from '../../config/models.js';
-import { Concept, Course } from '../../types/course.js';
+import { models } from '@/config/models';
+import { Concept, Course } from '@/types/course';
 import {
   conceptAwareHighLevelPrompts,
   conceptLearningPrompts,
@@ -8,7 +8,7 @@ import {
   connectionQuestionPrompts,
   elaborationPrompts,
   highLevelPrompts,
-} from './prompts/index.js';
+} from './prompts';
 
 export class GenerationService {
   async generateHighLevelQuestion(

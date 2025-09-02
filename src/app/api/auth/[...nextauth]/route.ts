@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authOptions } from '../../../../lib/auth';
+import { authOptions } from '@/lib/auth';
 
 // Placeholder for NextAuth handler until NextAuth.js is properly installed
 async function handler(req: NextRequest) {

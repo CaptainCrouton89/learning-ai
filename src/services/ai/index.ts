@@ -1,11 +1,11 @@
 import { generateObject } from "ai";
-import { models } from '../../config/models.js';
-import { Concept, Course } from '../../types/course.js';
-import { CourseService } from './courseService.js';
-import { EvaluationService } from './evaluationService.js';
-import { GenerationService } from './generationService.js';
-import { learningGoalSuggestionPrompts } from './prompts/index.js';
-import { LearningGoalSuggestionsSchema } from './schemas.js';
+import { models } from '@/config/models';
+import { Concept, Course } from '@/types/course';
+import { CourseService } from './courseService';
+import { EvaluationService } from './evaluationService';
+import { GenerationService } from './generationService';
+import { learningGoalSuggestionPrompts } from './prompts';
+import { LearningGoalSuggestionsSchema } from './schemas';
 
 export class AIService {
   private courseService = new CourseService();
@@ -312,4 +312,4 @@ export class AIService {
   }
 }
 
-export * from './schemas.js';
+export * from './schemas';

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCourseManager, STORAGE_TYPE } from '../../../../../config/storage';
-import { MongoCourseManager } from '../../../../../services/mongoCourseManager';
-import { TopicProgress } from '../../../../../types/course';
+import { getCourseManager, STORAGE_TYPE } from '@/config/storage';
+import { MongoCourseManager } from '@/services/mongoCourseManager';
+import { TopicProgress } from '@/types/course';
 import { z } from 'zod';
 
 // Helper function to load session with appropriate parameters

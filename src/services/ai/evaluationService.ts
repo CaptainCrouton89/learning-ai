@@ -1,7 +1,7 @@
 import { generateObject, generateText, tool } from "ai";
 import { z } from "zod";
-import { models } from "../../config/models.js";
-import { Concept, Course } from "../../types/course.js";
+import { models } from '@/config/models';
+import { Concept, Course } from '@/types/course';
 import {
   conceptAwareHighLevelPrompts,
   conceptLearningPrompts,
@@ -10,11 +10,11 @@ import {
   elaborationPrompts,
   flashcardPrompts,
   highLevelPrompts,
-} from "./prompts/index.js";
+} from './prompts';
 import {
   ConceptAnswerEvaluationSchema,
   FlashcardResponseSchema,
-} from "./schemas.js";
+} from './schemas';
 
 export class EvaluationService {
   async scoreComprehension(

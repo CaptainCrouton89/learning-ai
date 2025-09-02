@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCourseManager } from '../../../config/storage';
-import { RecommendationEngine, RecommendationOptions } from '../../../services/recommendations';
-import { Course, LearningSession } from '../../../types/course';
+import { getCourseManager } from '@/config/storage';
+import { RecommendationEngine, RecommendationOptions } from '@/services/recommendations';
+import { Course, LearningSession } from '@/types/course';
 
 export async function GET(request: NextRequest) {
   try {
