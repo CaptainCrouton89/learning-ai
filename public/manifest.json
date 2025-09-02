@@ -1,0 +1,66 @@
+{
+  "name": "Learning AI",
+  "short_name": "LearnAI",
+  "description": "AI-powered adaptive learning platform with spaced repetition and comprehensive progress tracking",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0070f3",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/next.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "features": [
+    "Cross Platform",
+    "Offline Support",
+    "Background Sync",
+    "Push Notifications"
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Learning",
+      "short_name": "Learn",
+      "description": "Start a new learning session",
+      "url": "/courses/new",
+      "icons": [
+        {
+          "src": "/next.svg",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "My Courses",
+      "short_name": "Courses",
+      "description": "View your learning courses",
+      "url": "/courses",
+      "icons": [
+        {
+          "src": "/next.svg",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View learning progress and statistics",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/next.svg",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

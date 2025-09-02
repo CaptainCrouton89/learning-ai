@@ -23,8 +23,9 @@ export class MongoCourseManager {
 
     // Create indexes for better performance
     await this.coursesCollection.createIndex({ name: 1 }, { unique: true });
-    await this.sessionsCollection.createIndex({ courseId: 1 });
-    await this.sessionsCollection.createIndex({ courseId: 1, updatedAt: -1 });
+    await this.sessionsCollection.createIndex({ userId: 1 });
+    await this.sessionsCollection.createIndex({ userId: 1, courseId: 1 }, { unique: true });
+    await this.sessionsCollection.createIndex({ userId: 1, updatedAt: -1 });
   }
 
   private ensureConnection(): void {
@@ -74,10 +75,11 @@ export class MongoCourseManager {
     return courses.map((c) => c.name);
   }
 
-  async createSession(courseId: string): Promise<LearningSession> {
+  async createSession(courseId: string, userId: string): Promise<LearningSession> {
     this.ensureConnection();
 
     const session: LearningSession = {
+      userId,
       courseId,
       currentPhase: "initialization",
       conceptsProgress: new Map(),
@@ -98,12 +100,12 @@ export class MongoCourseManager {
     ).map(([key, value]) => ({
       conceptName: key,
       itemsProgress: Array.from(value.itemsProgress.entries()).map(
-        ([itemKey, itemValue]) => ({
+        ([, itemValue]) => ({
           ...itemValue,
         })
       ),
       topicProgress: Array.from(value.topicProgress.entries()).map(
-        ([topicKey, topicValue]) => ({
+        ([, topicValue]) => ({
           ...topicValue,
         })
       ),
@@ -112,6 +114,7 @@ export class MongoCourseManager {
     }));
 
     return {
+      userId: session.userId,
       courseId: session.courseId,
       currentPhase: session.currentPhase,
       currentConcept: session.currentConcept,
@@ -152,6 +155,7 @@ export class MongoCourseManager {
     });
 
     return {
+      userId: document.userId,
       courseId: document.courseId,
       currentPhase: document.currentPhase,
       currentConcept: document.currentConcept,
@@ -170,17 +174,17 @@ export class MongoCourseManager {
     const document = this.sessionToDocument(session);
 
     await this.sessionsCollection!.replaceOne(
-      { courseId: session.courseId },
+      { userId: session.userId, courseId: session.courseId },
       document,
       { upsert: true }
     );
   }
 
-  async loadSession(courseId: string): Promise<LearningSession | null> {
+  async loadSession(courseId: string, userId: string): Promise<LearningSession | null> {
     this.ensureConnection();
 
     const document = await this.sessionsCollection!.findOne(
-      { courseId },
+      { userId, courseId },
       { sort: { updatedAt: -1 } }
     );
 

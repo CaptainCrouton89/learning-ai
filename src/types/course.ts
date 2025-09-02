@@ -79,6 +79,7 @@ export interface FlashcardSchedule {
 }
 
 export interface LearningSession {
+  userId: string;
   courseId: string;
   currentPhase: 'initialization' | 'high-level' | 'concept-learning' | 'memorization' | 'drawing-connections';
   currentConcept?: string;

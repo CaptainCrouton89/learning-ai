@@ -19,6 +19,7 @@ export interface CourseDocument {
 
 export interface SessionDocument {
   _id?: ObjectId;
+  userId: string;
   courseId: string;
   currentPhase: 'initialization' | 'high-level' | 'concept-learning' | 'memorization' | 'drawing-connections';
   currentConcept?: string;
