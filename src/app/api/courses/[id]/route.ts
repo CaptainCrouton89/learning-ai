@@ -149,13 +149,25 @@ export const DELETE = withErrorHandling(async (request: Request, context: RouteC
     throw new ApiErrorResponse('Course ID is required', 400, 'MISSING_COURSE_ID');
   }
 
-  // Note: Since MongoCourseManager doesn't have a delete method,
-  // we'll throw an error for now. This needs to be implemented.
-  throw new ApiErrorResponse(
-    'Course deletion not yet implemented',
-    501,
-    'NOT_IMPLEMENTED'
-  );
+  const manager = await getCourseManager();
+
+  try {
+    // Verify course exists first
+    await manager.loadCourse(courseId);
+    
+    // Delete the course and associated sessions
+    await manager.deleteCourse(courseId);
+
+    return createSuccessResponse(
+      null,
+      `Course "${courseId}" and all associated sessions deleted successfully`
+    );
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('not found')) {
+      throw new ApiErrorResponse(`Course with ID "${courseId}" not found`, 404, 'COURSE_NOT_FOUND');
+    }
+    throw error;
+  }
 });
 
 /**
