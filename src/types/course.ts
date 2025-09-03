@@ -11,6 +11,7 @@ export interface Concept {
 
 export interface Course {
   name: string;
+  userId?: string;
   backgroundKnowledge?: string[];
   concepts: Concept[];
   'drawing-connections': string[];

@@ -23,6 +23,7 @@ export class MongoCourseManager {
 
     // Create indexes for better performance
     await this.coursesCollection.createIndex({ name: 1 }, { unique: true });
+    await this.coursesCollection.createIndex({ userId: 1 });
     await this.sessionsCollection.createIndex({ userId: 1 });
     await this.sessionsCollection.createIndex({ userId: 1, courseId: 1 }, { unique: true });
     await this.sessionsCollection.createIndex({ userId: 1, updatedAt: -1 });
@@ -64,11 +65,12 @@ export class MongoCourseManager {
     return course as Course;
   }
 
-  async listCourses(): Promise<string[]> {
+  async listCourses(userId?: string): Promise<string[]> {
     this.ensureConnection();
 
+    const filter = userId ? { userId } : {};
     const courses = await this.coursesCollection!.find(
-      {},
+      filter,
       { projection: { name: 1 } }
     ).toArray();
 
