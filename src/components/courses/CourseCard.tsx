@@ -16,7 +16,7 @@ interface CourseCardProps {
 }
 
 export function CourseCard({ course, session, onResume, onArchive, onDelete, onDuplicate }: CourseCardProps) {
-  const totalItems = course.concepts.reduce((sum, concept) => sum + concept.memorize.items.length, 0);
+  const totalItems = course.concepts?.reduce((sum, concept) => sum + concept.memorize.items.length, 0) || 0;
   
   const getStatusBadge = () => {
     if (!session) {
@@ -33,7 +33,7 @@ export function CourseCard({ course, session, onResume, onArchive, onDelete, onD
     
     return (
       <Badge variant={statusColors[session.currentPhase] || "outline"}>
-        {session.currentPhase.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}
+        {session.currentPhase?.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase()) || "Unknown"}
       </Badge>
     );
   };
@@ -110,7 +110,7 @@ export function CourseCard({ course, session, onResume, onArchive, onDelete, onD
           <div className="flex items-center justify-between text-xs sm:text-sm">
             <div className="flex items-center gap-1 text-muted-foreground">
               <BookOpen className="w-4 h-4" />
-              <span>{course.concepts.length} concepts</span>
+              <span>{course.concepts?.length || 0} concepts</span>
             </div>
             <div className="flex items-center gap-1 text-muted-foreground">
               <Users className="w-4 h-4" />
@@ -118,16 +118,16 @@ export function CourseCard({ course, session, onResume, onArchive, onDelete, onD
             </div>
           </div>
 
-          {course.concepts.length > 0 && (
+          {course.concepts && course.concepts.length > 0 && (
             <div>
               <p className="text-xs text-muted-foreground mb-2">Topics:</p>
               <div className="flex flex-wrap gap-1">
-                {course.concepts.slice(0, 3).map((concept) => (
+                {course.concepts?.slice(0, 3).map((concept) => (
                   <Badge key={concept.name} variant="secondary" className="text-xs truncate max-w-24 sm:max-w-none">
                     {concept.name}
                   </Badge>
                 ))}
-                {course.concepts.length > 3 && (
+                {course.concepts && course.concepts.length > 3 && (
                   <Badge variant="outline" className="text-xs">
                     +{course.concepts.length - 3}
                   </Badge>
