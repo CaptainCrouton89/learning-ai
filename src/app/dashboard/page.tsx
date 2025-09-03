@@ -41,25 +41,34 @@ export default function DashboardPage() {
   const loadCourses = async () => {
     try {
       setLoading(true);
+      console.log("🔄 Fetching courses...");
       const response = await fetch("/api/courses");
+      console.log("📡 Response status:", response.status);
       if (!response.ok) throw new Error("Failed to fetch courses");
       
       const data = await response.json();
-      const coursesData: Course[] = data.courses || [];
+      console.log("📦 Raw API data:", data);
+      const coursesData: Course[] = data.data?.courses || [];
+      console.log("📚 Courses data:", coursesData);
+      console.log("📊 Number of courses:", coursesData.length);
       
       // Load sessions for each course
       const coursesWithSessions = await Promise.all(
         coursesData.map(async (course: Course) => {
           try {
+            console.log(`🎯 Loading session for course: ${course.name}`);
             const sessionResponse = await fetch(`/api/sessions?courseId=${course.name}`);
             const session: LearningSession | null = sessionResponse.ok ? await sessionResponse.json() as LearningSession : null;
+            console.log(`📋 Session for ${course.name}:`, session ? 'found' : 'not found');
             return { course, session };
-          } catch {
+          } catch (error) {
+            console.log(`❌ Error loading session for ${course.name}:`, error);
             return { course, session: null };
           }
         })
       );
 
+      console.log("🎓 Courses with sessions:", coursesWithSessions);
       setCourses(coursesWithSessions);
       
       // Calculate stats
@@ -85,11 +94,11 @@ export default function DashboardPage() {
   };
 
   const filteredCourses = courses.filter(({ course, session }) => {
-    // Search filter
+    // Search filter - handle both full course objects and summary format
     const matchesSearch = course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.concepts.some(concept => 
+      (course.concepts && course.concepts.some(concept => 
         concept.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      ));
     
     if (!matchesSearch) return false;
 
@@ -105,6 +114,12 @@ export default function DashboardPage() {
         return true;
     }
   });
+
+  console.log("🔍 Filtered courses:", filteredCourses);
+  console.log("🔍 Total courses before filter:", courses.length);
+  console.log("🔍 Filtered courses count:", filteredCourses.length);
+  console.log("🔍 Search term:", searchTerm);
+  console.log("🔍 Filter status:", filterStatus);
 
   const handleResumeCourse = async (courseName: string) => {
     // TODO: Navigate to learning session
