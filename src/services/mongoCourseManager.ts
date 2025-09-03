@@ -77,6 +77,22 @@ export class MongoCourseManager {
     return courses.map((c) => c.name);
   }
 
+  async deleteCourse(courseName: string): Promise<void> {
+    this.ensureConnection();
+
+    // First, delete all sessions associated with this course
+    await this.sessionsCollection!.deleteMany({ courseId: courseName });
+
+    // Then delete the course itself
+    const result = await this.coursesCollection!.deleteOne({ name: courseName });
+    
+    if (result.deletedCount === 0) {
+      throw new Error(`Course ${courseName} not found`);
+    }
+
+    console.log(`Course ${courseName} and associated sessions deleted from MongoDB`);
+  }
+
   async createSession(courseId: string, userId: string): Promise<LearningSession> {
     this.ensureConnection();
 
