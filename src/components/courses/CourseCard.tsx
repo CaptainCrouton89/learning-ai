@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Course, LearningSession } from "@/types/course";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, BookOpen, Users, Play, Archive, Trash2, Copy } from "lucide-react";
+import { Clock, BookOpen, Users, Play, Archive, Trash2, Copy, X } from "lucide-react";
 
 interface CourseCardProps {
   course: Course;
@@ -16,6 +17,7 @@ interface CourseCardProps {
 }
 
 export function CourseCard({ course, session, onResume, onArchive, onDelete, onDuplicate }: CourseCardProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const totalItems = course.concepts?.reduce((sum, concept) => sum + concept.memorize.items.length, 0) || 0;
   
   const getStatusBadge = () => {
@@ -73,6 +75,19 @@ export function CourseCard({ course, session, onResume, onArchive, onDelete, onD
     };
     
     return phaseProgress[session.currentPhase] || 0;
+  };
+
+  const handleDeleteClick = () => {
+    if (confirmDelete) {
+      onDelete?.(course.name);
+      setConfirmDelete(false);
+    } else {
+      setConfirmDelete(true);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setConfirmDelete(false);
   };
 
   return (
@@ -184,11 +199,16 @@ export function CourseCard({ course, session, onResume, onArchive, onDelete, onD
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onDelete?.(course.name)}
-              className="h-10 w-10 p-0 text-destructive hover:text-destructive touch-manipulation"
-              title="Delete course"
+              onClick={handleDeleteClick}
+              onMouseLeave={handleDeleteCancel}
+              className={`h-10 w-10 p-0 touch-manipulation ${
+                confirmDelete 
+                  ? "text-destructive bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground" 
+                  : "text-destructive hover:text-destructive"
+              }`}
+              title={confirmDelete ? "Click to confirm deletion" : "Delete course"}
             >
-              <Trash2 className="w-4 h-4" />
+              {confirmDelete ? <X className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
             </Button>
           </div>
         </div>
