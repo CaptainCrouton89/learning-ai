@@ -44,7 +44,8 @@ export default function DashboardPage() {
       const response = await fetch("/api/courses");
       if (!response.ok) throw new Error("Failed to fetch courses");
       
-      const coursesData = await response.json() as Course[];
+      const data = await response.json();
+      const coursesData: Course[] = data.courses || [];
       
       // Load sessions for each course
       const coursesWithSessions = await Promise.all(

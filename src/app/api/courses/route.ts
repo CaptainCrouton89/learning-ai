@@ -45,10 +45,9 @@ export const GET = withErrorHandling(
       );
 
       const manager = await getCourseManager();
-      const courses = await manager.listCourses();
+      const courses = await manager.listCourses(userId);
       
-      // For now, return all courses since we don't have user-specific filtering yet
-      // TODO: Add user-specific filtering when user association is implemented
+      // Filter courses by userId - now implemented!
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
       const paginatedCourses = courses.slice(startIndex, endIndex);
@@ -117,16 +116,18 @@ export const POST = withErrorHandling(async (request: Request) => {
   
   const body = await validateRequestBody(request, requestSchemas.createCourse);
   
-  // Check if course with same name already exists
+  // Check if course with same name already exists (only if name is provided)
   const manager = await getCourseManager();
-  const existingCourses = await manager.listCourses();
   
-  if (existingCourses.includes(body.name)) {
-    throw new ApiErrorResponse(
-      `Course with name "${body.name}" already exists`,
-      409,
-      'COURSE_ALREADY_EXISTS'
-    );
+  if (body.name) {
+    const existingCourses = await manager.listCourses();
+    if (existingCourses.includes(body.name)) {
+      throw new ApiErrorResponse(
+        `Course with name "${body.name}" already exists`,
+        409,
+        'COURSE_ALREADY_EXISTS'
+      );
+    }
   }
 
   // Analyze topic appropriateness
@@ -153,6 +154,9 @@ export const POST = withErrorHandling(async (request: Request) => {
     body.learningGoals
   );
 
+  // Set userId for the course
+  course.userId = userId;
+  
   // Save course to database
   await manager.saveCourse(course);
 

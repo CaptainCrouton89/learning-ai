@@ -128,11 +128,14 @@ export async function validateRequestBody<T>(
   request: Request,
   schema: ZodSchema<T>
 ): Promise<T> {
+  let body: any;
   try {
-    const body = await request.json();
+    body = await request.json();
+    console.log('Request body before validation:', JSON.stringify(body, null, 2));
     return schema.parse(body);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.log('Validation failed for body:', JSON.stringify(body, null, 2));
       throw error;
     }
     throw new ApiErrorResponse('Invalid JSON in request body', 400, 'INVALID_JSON');
@@ -458,7 +461,7 @@ export namespace ApiTypes {
  */
 export const requestSchemas = {
   createCourse: z.object({
-    name: commonSchemas.courseName,
+    name: commonSchemas.courseName.optional(),
     topic: z.string().min(1, 'Topic is required'),
     documentContent: z.string().optional(),
     timeAvailable: z.string().min(1, 'Time available is required'),

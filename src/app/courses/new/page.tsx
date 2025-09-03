@@ -51,7 +51,8 @@ export default function NewCoursePage() {
         throw new Error(errorData.error || "Failed to create course");
       }
 
-      const course = (await response.json()) as Course;
+      const responseData = await response.json();
+      const course = responseData.data as Course;
 
       // Save the course
       const saveResponse = await fetch("/api/courses", {
@@ -59,7 +60,14 @@ export default function NewCoursePage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(course),
+        body: JSON.stringify({
+          name: course.name,
+          topic: courseData.topic,
+          documentContent: courseData.documentContent,
+          timeAvailable: courseData.timeAvailable,
+          existingUnderstanding: courseData.existingUnderstanding,
+          learningGoals: courseData.focusDescription,
+        }),
       });
 
       if (!saveResponse.ok) {
