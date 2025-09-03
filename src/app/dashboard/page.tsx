@@ -145,15 +145,16 @@ export default function DashboardPage() {
   };
 
   const handleDeleteCourse = async (courseName: string) => {
-    if (!window.confirm("Are you sure you want to delete this course? This action cannot be undone.")) return;
-    
     try {
-      const response = await fetch(`/api/courses/${courseName}`, {
+      const response = await fetch(`/api/courses/${encodeURIComponent(courseName)}`, {
         method: "DELETE",
       });
       
       if (response.ok) {
         loadCourses();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Failed to delete course:", errorData.message || response.statusText);
       }
     } catch (error) {
       console.error("Failed to delete course:", error);
